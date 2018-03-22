@@ -1,4 +1,4 @@
-package code.designpattern.performance;
+package code.performance;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -17,12 +17,12 @@ import java.util.concurrent.*;
  * @author zixiao
  * @date 18/3/21
  */
-public class ParallelExecuteDemo {
+public class ParallelExecuteTest {
 
     //线程池
     private final ExecutorService executorService;
 
-    public ParallelExecuteDemo() {
+    public ParallelExecuteTest() {
         this.executorService = Executors.newFixedThreadPool(10);
     }
 
@@ -181,7 +181,7 @@ public class ParallelExecuteDemo {
     }
 
     public static void main(String[] args) {
-        ParallelExecuteDemo showService = new ParallelExecuteDemo();
+        ParallelExecuteTest showService = new ParallelExecuteTest();
         long start = System.currentTimeMillis();
         showService.display("123333");
 
