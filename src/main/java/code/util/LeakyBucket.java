@@ -121,8 +121,8 @@ public class LeakyBucket {
         LeakyBucket leakyBucket = LeakyBucket.create(100);
 
         for(int i=0; i<500; i++){
-            boolean sucess = leakyBucket.put();
-            if(!sucess){
+            boolean success = leakyBucket.put();
+            if(!success){
                 System.out.println("Flow control for a while");
                 Thread.sleep(20);
             }else{
