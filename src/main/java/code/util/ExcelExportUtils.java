@@ -34,6 +34,7 @@ public class ExcelExportUtils {
 
     /**
      * 导出Excel文件的通用方法
+     * 行数据格式：Object[]
      *
      * @param headArray head头的值数组
      * @param fileName 文件名
@@ -66,6 +67,7 @@ public class ExcelExportUtils {
 
     /**
      * 创建Excel
+     * 行数据格式：Object[]
      *
      * @param headArray
      * @param valueList 值列表
@@ -120,6 +122,7 @@ public class ExcelExportUtils {
 
     /**
      * 导出Excel文件的通用方法
+     * 行数据格式：Map<String, Object> 或者POJO
      *
      * @param headArray head头的值数组
      * @param fileName 文件名
@@ -152,6 +155,7 @@ public class ExcelExportUtils {
 
     /**
      * 创建Excel
+     * 行数据格式：Map<String, Object> 或者POJO
      *
      * @param headArray 表头的值数组
      * @param attrArray 显示的属性数组
