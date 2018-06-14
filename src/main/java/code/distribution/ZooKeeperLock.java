@@ -55,12 +55,12 @@ public class ZooKeeperLock implements DistributedLock {
 
         //2、每个客户端在lockPath下创建临时顺序节点
         String myFullPath = zkClient.createEphemeralSequential(lockPath + SEP, null);
-        final String myLockSep = myFullPath.substring(myFullPath.lastIndexOf(SEP)+1);
+        String myLockSeq = myFullPath.substring(myFullPath.lastIndexOf(SEP)+1);
 
         //3、尝试获取锁
-        tryGetLock(lockPath, myLockSep);
+        tryGetLock(lockPath, myLockSeq);
 
-        return myLockSep;
+        return myLockSeq;
     }
 
     /**
