@@ -33,9 +33,9 @@ public class CatSortCommand implements ICommand<CatSortResult>{
     private ExecutorService executorService;
 
     /**
-     * 任务队列
+     * 异步执行服务
      */
-    private BlockingQueue<Future<Map<String, Integer>>> taskQueue;
+    private CompletionService<Map<String, Integer>> completionService;
 
     /**
      * MD5 与 行字符串的映射关系
@@ -64,7 +64,7 @@ public class CatSortCommand implements ICommand<CatSortResult>{
                 1000 * 60,
                 TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(QUEUE_SIZE));
-        taskQueue = new LinkedBlockingQueue<Future<Map<String, Integer>>>();
+        completionService = new ExecutorCompletionService(executorService);
     }
 
     @Override
@@ -81,13 +81,12 @@ public class CatSortCommand implements ICommand<CatSortResult>{
 
             //2、多线程统计结果
             for(final File file : files){
-                Future<Map<String, Integer>> future = executorService.submit(new Callable<Map<String,Integer>>() {
+                completionService.submit(new Callable<Map<String, Integer>>() {
                     @Override
                     public Map<String, Integer> call() throws Exception {
                         return grepAndCount(file, keyword);
                     }
                 });
-                taskQueue.add(future);
             }
 
             //3、获取结果，并合并
@@ -138,7 +137,7 @@ public class CatSortCommand implements ICommand<CatSortResult>{
     private Map<String, Integer> getAndMerge(int fileCount) throws InterruptedException, ExecutionException {
         Map<String, Integer> md5CountMap = new HashMap<String, Integer>(1024);
         for(int i=0; i < fileCount; i++){
-            mergeMap(md5CountMap, taskQueue.take().get());
+            mergeMap(md5CountMap, completionService.take().get());
         }
         return md5CountMap;
     }
@@ -153,7 +152,7 @@ public class CatSortCommand implements ICommand<CatSortResult>{
     private Map<String, Integer> getAndMergeForkJoin(int fileCount) throws InterruptedException, ExecutionException {
         List<Map<String, Integer>> maps = new ArrayList<Map<String, Integer>>();
         for(int i=0; i < fileCount; i++){
-            maps.add(taskQueue.take().get());
+            maps.add(completionService.take().get());
         }
         ForkJoinPool forkJoinPool = new ForkJoinPool();
         MergeCountTask countTask = new MergeCountTask(maps);
@@ -274,9 +273,6 @@ public class CatSortCommand implements ICommand<CatSortResult>{
     public void destroy(){
         if(executorService != null){
             executorService.shutdown();
-        }
-        if(taskQueue != null){
-            taskQueue.clear();
         }
         md5LineMap.clear();
     }
