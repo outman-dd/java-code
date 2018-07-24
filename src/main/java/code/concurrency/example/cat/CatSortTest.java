@@ -1,4 +1,4 @@
-package code.performance.cat;
+package code.concurrency.example.cat;
 
 import code.util.DateFormatUtils;
 import org.junit.Test;

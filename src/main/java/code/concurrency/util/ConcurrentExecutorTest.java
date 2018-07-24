@@ -1,4 +1,4 @@
-package code.concurrent;
+package code.concurrency.util;
 
 import code.util.DateFormatUtils;
 import org.junit.Test;

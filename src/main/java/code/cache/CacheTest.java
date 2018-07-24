@@ -1,6 +1,6 @@
 package code.cache;
 
-import code.concurrent.ConcurrentExecutor;
+import code.concurrency.util.ConcurrentExecutor;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;

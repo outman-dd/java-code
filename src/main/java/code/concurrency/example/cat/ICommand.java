@@ -1,4 +1,4 @@
-package code.performance.cat;
+package code.concurrency.example.cat;
 
 /**
  * 〈命令接口〉<p>

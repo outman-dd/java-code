@@ -1,4 +1,4 @@
-package code.performance.cat;
+package code.concurrency.example.cat;
 
 import java.io.Serializable;
 import java.util.List;
