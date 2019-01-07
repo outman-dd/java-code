@@ -30,11 +30,27 @@ public class CatSortTest {
         //准备数据
         //generateLogs(100, 10000);
 
-        catAndSort(filePath+"*.log", "Login", SortType.DESC);
+        //catAndSort(filePath + "*.log", "Login", SortType.DESC);
+
+        catAndSort2(filePath + "*.log", "Login", SortType.DESC);
     }
 
     private void catAndSort(String filePath, String keyWord, SortType sortType ){
         ICommand command = new CatSortCommand(filePath, keyWord, sortType);
+        Result<CatSortResult> resultResult = command.execute();
+        if(!resultResult.isSuccess()){
+            System.err.println(resultResult.getErrorMsg());
+        }else{
+            int total = 0;
+            for(CatSortResult catSortResult : resultResult.getResultList()){
+                total += catSortResult.getCount();
+            }
+            System.out.println("Total:"+total);
+        }
+    }
+
+    private void catAndSort2(String filePath, String keyWord, SortType sortType ){
+        ICommand command = new CatSortCommand2(filePath, keyWord, sortType);
         Result<CatSortResult> resultResult = command.execute();
         if(!resultResult.isSuccess()){
             System.err.println(resultResult.getErrorMsg());
