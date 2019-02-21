@@ -5,7 +5,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * 〈多线程打印〉<p>
+ * 〈多线程打印 Condition〉<p>
  * 〈有三个线程分别打印A、B、C，请用多线程编程实现，在屏幕打印10次ABC能详细描述〉
  *
  * @author zixiao
@@ -23,12 +23,16 @@ public class MutilThreadPrinter {
 
     private static int count = 0;
 
-    private static int PRINT_TIMES = 1000;
+    private static int PRINT_TIMES = 1000000;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+        long start = System.currentTimeMillis();
         new ThreadA().start();
         new ThreadB().start();
-        new ThreadC().start();
+        Thread t3 = new ThreadC();
+        t3.start();
+        t3.join();
+        System.out.println("\n\rCost:"+(System.currentTimeMillis()-start));
     }
 
     private static void print(String s){
@@ -39,17 +43,17 @@ public class MutilThreadPrinter {
     static class ThreadA extends Thread {
         @Override
         public void run() {
+            lock.lock();
             try {
-                lock.lock();
                 for (int i = 0; i < PRINT_TIMES; i++) {
                     if(count % 3 != 0){
-                        A.await();
+                        A.await();//The lock associated with A is atomically released
                     }
                     print("A");
                     B.signal(); // A执行完唤醒B线程
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
             } finally {
                 lock.unlock();
             }
@@ -59,8 +63,8 @@ public class MutilThreadPrinter {
     static class ThreadB extends Thread {
         @Override
         public void run() {
+            lock.lock();
             try {
-                lock.lock();
                 for (int i = 0; i < PRINT_TIMES; i++) {
                     if(count % 3 != 1){
                         B.await();
@@ -69,7 +73,7 @@ public class MutilThreadPrinter {
                     C.signal();
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
             } finally {
                 lock.unlock();
             }
@@ -79,8 +83,8 @@ public class MutilThreadPrinter {
     static class ThreadC extends Thread {
         @Override
         public void run() {
+            lock.lock();
             try {
-                lock.lock();
                 for (int i = 0; i < PRINT_TIMES; i++) {
                     if(count % 3 != 2){
                         C.await();
@@ -89,7 +93,7 @@ public class MutilThreadPrinter {
                     A.signal();
                 }
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                Thread.currentThread().interrupt();
             } finally {
                 lock.unlock();
             }
