@@ -37,7 +37,7 @@ public class CacheTest {
         for(String key : TEST_KEYS){
             cachePenetrate.put(key, "value_"+key);
         }
-        //TODO BloomFilter未实现
+
         for(int i=0; i< 10; i++){
             System.out.println("*********第"+i+"次**********");
             cachePenetrate.getWithBloomFilter(notExistKey);

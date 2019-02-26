@@ -23,7 +23,7 @@ public class CachePenetrate{
 
     private int shortSec = 5;
 
-    private BloomFilter<String> bloomFilter = new BloomFilter<String>();
+    private BloomFilter<String> bloomFilter = new BloomFilter<String>(1000000000, 0.01);
 
     /**
      * 访问key未在DB查询到值，也将空值写进缓存，但可以设置较短过期时间。

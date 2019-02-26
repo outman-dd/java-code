@@ -19,15 +19,17 @@ public class SimpleDb<K, V> implements IDb<K, V> {
     }
 
     public V get(K key) {
-        System.out.println("从数据库查询key："+key);
+        System.out.println("数据库查询，key："+key);
         return dataMap.get(key);
     }
 
     public V put(K key, V value) {
+        System.out.println("数据库插入，key："+key);
         return dataMap.put(key, value);
     }
 
     public V remove(K key) {
+        System.out.println("数据库删除，key："+key);
         return dataMap.remove(key);
     }
 }
