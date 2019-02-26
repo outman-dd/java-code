@@ -1,4 +1,4 @@
-package code.cache;
+package code.collection;
 
 import java.util.LinkedHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
