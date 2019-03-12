@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 /**
- * 〈心跳发送器〉<p>
+ * 〈请求投票 发送器〉<p>
  * 〈功能详细描述〉
  *
  * @author zixiao
