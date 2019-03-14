@@ -157,10 +157,7 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
         public String toString() {
             return "Node{" +
                     "waitStatus=" + waitStatus +
-                    ", thread=" + thread.getName() +
-                    ", prev=" + prev +
-                    ", next=" + next +
-                    ", nextWaiter=" + nextWaiter +
+                    ", thread=" + thread +
                     '}';
         }
     }
@@ -177,11 +174,11 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
         return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
     }
 
-    private final boolean compareAndWaitStatus(Node node, int expect, int update) {
-        return unsafe.compareAndSwapObject(node, waitStatusOffset, expect, update);
+    private final boolean compareAndSetWaitStatus(Node node, int expect, int update) {
+        return unsafe.compareAndSwapInt(node, waitStatusOffset, expect, update);
     }
 
-    private final boolean compareAndWaitNext(Node node, int expect, int update) {
+    private final boolean compareAndSetWaitNext(Node node, int expect, int update) {
         return unsafe.compareAndSwapObject(node, nextOffset, expect, update);
     }
 
@@ -268,7 +265,9 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
     }
 
     /**
-     * 队列中自旋获取锁，并在合适的位置park
+     * 队列中自旋排队申请锁
+     * 1、如果第一个前继为head，且尝试拿锁，成功就返回
+     * 2、如果第一个前继状态为SINGAL，则找到休息点，park自己
      * @param node
      * @param arg
      * @return 是否被中断过
@@ -285,10 +284,17 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
                     acquired = true;
                     //设置为头结点
                     setAsHead(node);
+                    //释放
+                    pred.next = null;
                     return interrupted;
                 }
-                if(shouldWaitWhenPredNotHead(pred, node) && parkAndCheckInterrupt()){
-                    interrupted = true;
+                //当第一个前继不是head时，判断是否可以休息
+                if(shouldWaitWhenPredNotHead(pred, node)) {
+                    //park自己并返回中断标志
+                    if(parkAndCheckInterrupt()){
+                        //保存是否被中断过的标记
+                        interrupted = true;
+                    }
                 }
             }
         }finally {
@@ -299,7 +305,7 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
     }
 
     /**
-     * 队列中自旋获取锁，并在合适的位置park，可被中断
+     * 队列中自旋排队申请锁，可被中断
      * @param node
      * @param arg
      * @return 是否被中断过
@@ -315,30 +321,37 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
                     acquired = true;
                     //设置为头结点
                     setAsHead(node);
+                    //释放
+                    pred.next = null;
                     return;
                 }
-                if(shouldWaitWhenPredNotHead(pred, node) && parkAndCheckInterrupt()){
-                    throw new InterruptedException();
+                //当第一个前继不是head时，判断是否可以休息
+                if(shouldWaitWhenPredNotHead(pred, node)) {
+                    //park自己并返回中断标志
+                    if(parkAndCheckInterrupt()){
+                        throw new InterruptedException();
+                    }
                 }
             }
         }finally {
             if(!acquired){
-                //
+                cancelAcquire(node);
             }
         }
     }
 
     /**
-     * park自己并返回中断标志
-     * @return 返回中断标志
+     *  设置会头结点
+     * @param node
      */
-    private boolean parkAndCheckInterrupt() {
-        LockSupport.park(this);
-        //返回中断状态，并清除中断标记
-        return Thread.interrupted();
+    private void setAsHead(Node node) {
+        head = node;
+        node.prev = null;
+        node.thread = null;
     }
 
     /**
+     * 当第一个前继不是head时，判断是否可以休息
      *
      * 判断当前结点的前驱结点的waitStatus
      * if 为SIGNAL状态(即等待唤醒状态)，则返回true。
@@ -347,14 +360,14 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
      * (当从Condition的条件等待队列转移到同步队列时，结点状态为CONDITION 因此需要转换为SIGNAL)，那么将其转换为SIGNAL状态，等待被唤醒。
      * @param pred
      * @param node
-     * @return
+     * @return 第一个前继为SINGAL是返回true
      */
     private boolean shouldWaitWhenPredNotHead(Node pred, Node node) {
         int predStatus = pred.waitStatus;
         if(predStatus == Node.SIGNAL){
             return true;
         }else if(predStatus == Node.CANCELLED){
-            //遍历前驱结点直到找到没有结束状态的结点
+            //遍历前驱结点直到找到没有CANCELLED状态的结点
             do{
                 pred = pred.prev;
                 node.prev = pred;
@@ -362,20 +375,20 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
             pred.next = node;
         }else{
             //不是CANCELLED，也不为SIGNAL 设置为等待被唤醒
-            compareAndWaitStatus(pred, predStatus, Node.SIGNAL);
+            compareAndSetWaitStatus(pred, predStatus, Node.SIGNAL);
         }
         return false;
     }
 
     /**
-     *  设置会头结点
-     * @param node
+     * park自己并返回中断标志
+     * @return 返回中断标志
      */
-    private void setAsHead(Node node) {
-        head.next = null;
-        head = node;
-        node.prev = null;
-        node.thread = null;
+    private boolean parkAndCheckInterrupt() {
+        System.out.println(Thread.currentThread().getName()+" parked.");
+        LockSupport.park(this);
+        //返回中断状态，并清除中断标记
+        return Thread.interrupted();
     }
 
     /**
@@ -394,11 +407,17 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
         System.out.println("cancelAcquire : node="+node);
     }
 
+    /**
+     * 释放锁
+     * @param arg
+     * @return
+     */
     public final boolean release(int arg) {
         if (tryRelease(arg)) {
-            //唤醒后继节点
             Node h = head;
+            //头结点不为空，且状态不是INITIAL（如果是 INITIAL 说明已经调用unparkSuccessor(h)）
             if (h != null && h.waitStatus != Node.INITIAL){
+                //唤醒后继节点
                 unparkSuccessor(h);
             }
             return true;
@@ -407,13 +426,14 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
     }
 
     /**
-     * unpark 后继节点
+     * unpark 后继节点（非CANCELLED）
      * @param node
      */
     private void unparkSuccessor(Node node) {
         int ws = node.waitStatus;
         if(ws < Node.INITIAL){
-            compareAndWaitStatus(node, ws, Node.INITIAL);
+            //节点已经释放锁，状态置为INITIAL，如果操作失败忽略
+            compareAndSetWaitStatus(node, ws, Node.INITIAL);
         }
 
         Node successor = node.next;
@@ -422,11 +442,12 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
             successor = null;
             //从尾部开始遍历 找到最后一个不是CANCELLED状态的节点
             for(Node t = tail; t != node && t != null; t = t.prev){
-                if(t.waitStatus <= Node.INITIAL){
+                if(t.waitStatus != Node.CANCELLED){
                     successor = t;
                 }
             }
         }
+        //找到最前的一个非CANCELLED状态后继节点
         if(successor != null){
             LockSupport.unpark(successor.thread);
         }

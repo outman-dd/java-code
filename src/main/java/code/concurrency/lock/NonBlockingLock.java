@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Condition;
  * @author zixiao
  * @date 19/1/24
  */
-public class NonBlockingLock implements Lock{
+public class NonBlockingLock implements ILock {
 
     private final Sync sync;
 
@@ -31,7 +31,7 @@ public class NonBlockingLock implements Lock{
          * acquire.  If this method reports failure, the acquire method
          * may queue the thread, if it is not already queued, until it is
          * signalled by a release from some other thread. This can be used
-         * to implement method {@link Lock#tryLock()}.
+         * to implement method {@link ILock#tryLock()}.
          *
          * <p>The default
          * implementation throws {@link UnsupportedOperationException}.

@@ -1,6 +1,6 @@
 package code.concurrency.lock.cas;
 
-import code.concurrency.lock.Lock;
+import code.concurrency.lock.ILock;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,7 +13,7 @@ import java.util.concurrent.locks.Condition;
  * @author zixiao
  * @date 2019/3/13
  */
-public class SpinLock implements Lock{
+public class SpinLock implements ILock {
 
     private AtomicReference<Thread> lock = new AtomicReference<>();
 

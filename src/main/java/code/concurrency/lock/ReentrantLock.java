@@ -12,7 +12,7 @@ import java.util.concurrent.locks.Condition;
  * @author zixiao
  * @date 2019/3/14
  */
-public class ReentrantLock implements Lock{
+public class ReentrantLock implements ILock {
 
     private final Sync sync;
 

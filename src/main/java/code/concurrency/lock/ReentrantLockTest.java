@@ -2,6 +2,10 @@ package code.concurrency.lock;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+
 /**
  * 〈可重入锁〉<p>
  * 〈功能详细描述〉
@@ -11,59 +15,85 @@ import org.junit.Test;
  */
 public class ReentrantLockTest{
 
-    private final Lock nonfairLock = new ReentrantLock(false);
+    private final ILock nonfairLock = new ReentrantLock();
 
-    private final Lock fairLock = new ReentrantLock(true);
+    private final ILock fairLock = new ReentrantLock(true);
 
+    private final Lock jdkLock = new java.util.concurrent.locks.ReentrantLock();
+
+    private final int forNum = 1;
+
+    private final int threads = 8;
     @Test
-    public void nonfairLockTest() throws InterruptedException {
-        Thread t1 = new Thread(new Task(nonfairLock, "AAA"));
-        Thread t2 = new Thread(new Task(nonfairLock, "BBB"));
+    public void lockTest() throws InterruptedException {
+        List<Thread> threadList = new ArrayList<>();
+        for(int i=0; i<threads; i++){
+            threadList.add(new Thread(new Task(nonfairLock)));
+        }
 
         long start = System.currentTimeMillis();
-        t1.start();
-        t2.start();
-        t2.join();
+        for (Thread thread : threadList) {
+            thread.start();
+        }
+        threadList.get(threads-1).join();
+
+        System.out.println("nonfairLock cost:"+(System.currentTimeMillis()-start)+"ms");
+    }
+
+    @Test
+    public void jdkLockTest() throws InterruptedException {
+        List<Thread> threadList = new ArrayList<>();
+        for(int i=0; i<threads; i++){
+            threadList.add(new Thread(new Task(jdkLock)));
+        }
+
+        long start = System.currentTimeMillis();
+        for (Thread thread : threadList) {
+            thread.start();
+        }
+        threadList.get(threads-1).join();
+
         System.out.println("nonfairLock cost:"+(System.currentTimeMillis()-start)+"ms");
     }
 
     @Test
     public void fairLockTest() throws InterruptedException {
-        Thread t1 = new Thread(new Task(fairLock, "AAA"));
-        Thread t2 = new Thread(new Task(fairLock, "BBB"));
+        List<Thread> threadList = new ArrayList<>();
+        for(int i=0; i<threads; i++){
+            threadList.add(new Thread(new Task(fairLock)));
+        }
 
         long start = System.currentTimeMillis();
-        t1.start();
-        t2.start();
-        t2.join();
+        for (Thread thread : threadList) {
+            thread.start();
+        }
+        threadList.get(threads-1).join();
+
         System.out.println("fairLock cost:" + (System.currentTimeMillis() - start) + "ms");
     }
-
 
     class Task implements Runnable{
 
         private Lock lock;
 
-        private String msg;
+        private String msg = ">>>";
 
-        public Task(Lock lock, String msg){
+        public Task(Lock lock){
             this.lock = lock;
-            this.msg = msg;
         }
 
         @Override
         public void run() {
-            for(int i=0; i<100; i++){
+            for(int i=0; i<forNum; i++){
                 print(i);
             }
-
         }
 
         private void print(int idx){
             lock.lock();
             try {
                 try {
-                    Thread.sleep(idx%3);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     //
                 }
