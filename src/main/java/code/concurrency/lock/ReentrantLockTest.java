@@ -1,49 +1,77 @@
 package code.concurrency.lock;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.junit.Test;
 
 /**
- * 〈可重入测试〉<p>
- * 〈读写锁最大可重入锁数 65535
- *  int型state，高16位读状态 低16位写状态〉
- *
- * -Xss10m, 防止StackOverflowError
+ * 〈可重入锁〉<p>
+ * 〈功能详细描述〉
  *
  * @author zixiao
- * @date 19/1/23
+ * @date 2019/3/14
  */
-public class ReentrantLockTest {
+public class ReentrantLockTest{
 
-    public int lockedCount = 0;
+    private final Lock nonfairLock = new ReentrantLock(false);
 
-    private int max = 100000;
+    private final Lock fairLock = new ReentrantLock(true);
 
-    private Lock lock = new ReentrantReadWriteLock().writeLock();
+    @Test
+    public void nonfairLockTest() throws InterruptedException {
+        Thread t1 = new Thread(new Task(nonfairLock, "AAA"));
+        Thread t2 = new Thread(new Task(nonfairLock, "BBB"));
 
-    public void doNext() {
-        if(lockedCount>=max){
-            return;
-        }
-        lock.lock();
-        lockedCount++;
-        try {
-            doNext();
-        } finally {
-            lock.unlock();
-        }
+        long start = System.currentTimeMillis();
+        t1.start();
+        t2.start();
+        t2.join();
+        System.out.println("nonfairLock cost:"+(System.currentTimeMillis()-start)+"ms");
     }
 
-    public static void main(String[] args) {
-        ReentrantLockTest reentrantLockTest = new ReentrantLockTest();
-        try {
-            reentrantLockTest.doNext();
-            System.out.println("Lock count:" + reentrantLockTest.lockedCount);
-        } catch (Throwable e) {
-            System.err.println("Lock count:" + reentrantLockTest.lockedCount + ", " + e.getMessage());
-            //throw e;
-        }
+    @Test
+    public void fairLockTest() throws InterruptedException {
+        Thread t1 = new Thread(new Task(fairLock, "AAA"));
+        Thread t2 = new Thread(new Task(fairLock, "BBB"));
+
+        long start = System.currentTimeMillis();
+        t1.start();
+        t2.start();
+        t2.join();
+        System.out.println("fairLock cost:" + (System.currentTimeMillis() - start) + "ms");
     }
 
+
+    class Task implements Runnable{
+
+        private Lock lock;
+
+        private String msg;
+
+        public Task(Lock lock, String msg){
+            this.lock = lock;
+            this.msg = msg;
+        }
+
+        @Override
+        public void run() {
+            for(int i=0; i<100; i++){
+                print(i);
+            }
+
+        }
+
+        private void print(int idx){
+            lock.lock();
+            try {
+                try {
+                    Thread.sleep(idx%3);
+                } catch (InterruptedException e) {
+                    //
+                }
+                System.out.println(Thread.currentThread().getName()+":"+ msg + idx);
+            }finally {
+                lock.unlock();
+            }
+        }
+    }
 
 }

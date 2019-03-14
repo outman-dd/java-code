@@ -1,4 +1,4 @@
-package code.concurrency.lock;
+package code.concurrency.example.printer;
 
 import java.util.concurrent.locks.LockSupport;
 
