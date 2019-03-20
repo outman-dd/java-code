@@ -37,4 +37,12 @@ public enum Words {
     public void setCn(String cn) {
         this.cn = cn;
     }
+
+    @Override
+    public String toString() {
+        return "Words{" +
+                "en='" + en + '\'' +
+                ", cn='" + cn + '\'' +
+                "} " + super.toString();
+    }
 }

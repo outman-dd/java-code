@@ -1,5 +1,7 @@
 package code.serialize;
 
+import code.spi.extension.SPI;
+
 /**
  * 〈一句话功能简述〉<p>
  * 〈功能详细描述〉
@@ -7,6 +9,7 @@ package code.serialize;
  * @author zixiao
  * @date 18/6/5
  */
+@SPI(value = "json")
 public interface ISerializer {
 
     /**
