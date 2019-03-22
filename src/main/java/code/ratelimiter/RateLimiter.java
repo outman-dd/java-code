@@ -1,4 +1,4 @@
-package code.ratelimiter.controller;
+package code.ratelimiter;
 
 /**
  * 〈限速器〉<p>

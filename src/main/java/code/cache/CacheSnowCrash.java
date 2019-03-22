@@ -1,7 +1,7 @@
 package code.cache;
 
-import code.distribution.DistributedLock;
-import code.distribution.ZooKeeperLock;
+import code.distribution.lock.DistributedLock;
+import code.distribution.lock.ZooKeeperLock;
 
 import java.util.Random;
 

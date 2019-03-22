@@ -1,4 +1,4 @@
-package code.distribution;
+package code.distribution.lock;
 
 import org.I0Itec.zkclient.IZkDataListener;
 import org.I0Itec.zkclient.ZkClient;

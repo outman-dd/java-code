@@ -38,7 +38,7 @@ public abstract class Stage<T> {
         }
     }
 
-    protected void transformEntry(PipelineContext context, Object obj, Object... args)
+    void transformEntry(PipelineContext context, Object obj, Object... args)
             throws Throwable {
         T t = (T)obj;
         entry(context, t, args);

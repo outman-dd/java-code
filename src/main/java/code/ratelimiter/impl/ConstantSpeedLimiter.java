@@ -1,4 +1,6 @@
-package code.ratelimiter.controller;
+package code.ratelimiter.impl;
+
+import code.ratelimiter.RateLimiter;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -9,7 +11,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author zixiao
  * @date 2019/2/28
  */
-public class ConstantSpeedLimiter implements RateLimiter{
+public class ConstantSpeedLimiter implements RateLimiter {
 
     private final int maxQueueingTimeMs = 500;
 

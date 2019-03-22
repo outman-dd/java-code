@@ -1,4 +1,4 @@
-package code.distribution;
+package code.distribution.lock;
 
 /**
  * 〈分布式锁〉<p>
