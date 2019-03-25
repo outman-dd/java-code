@@ -18,6 +18,8 @@ import java.nio.charset.Charset;
     缺点：
     1. 算法判断key在集合中时，有一定的概率key其实不在集合中
     2. 无法删除
+
+    判断原则：如果判断key不存在，则一定不存在；判断key存在，有可能不存在
  *
  * @author zixiao
  * @date 19/2/26

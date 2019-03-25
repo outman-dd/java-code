@@ -196,7 +196,7 @@ public class AbstractQueuedSync extends AbstractOwnableSync {
 
         //队列中自旋获取锁，并在合适的位置park
         if (acquireQueued(waiter, arg)){
-            //设置 待定过程中的 中断
+            //设置 等待过程中的 中断
             interruptSelf();
         }
     }
