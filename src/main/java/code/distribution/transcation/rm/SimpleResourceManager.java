@@ -48,28 +48,30 @@ public class SimpleResourceManager implements ResourceManager {
      */
     private Object doLocalTransaction(String xid, Callable callable, ArgContext argContext, long startTime) throws Exception {
         LockKey lockKey = new LockKey(argContext);
-        String resourceId = ResourceId.newResourceId(argContext.getBizType());
+        String resourceId = ResourceId.newResourceId(argContext.getTableName());
         BranchStatus branchStatus = null;
         try {
-            //注册分支事务，获取全局锁
-            if(!register(xid, resourceId, lockKey, this)){
-                throw new TxLockException(lockKey + " is locked.");
-            }
-
             //记录日志和执行sql
             sqlExecutor = new SimpleSqlExecutor(xid, lockKey);
-            UndoLog undoLog = new UndoLog(xid, sqlExecutor.beforeImage(), sqlExecutor.afterImage());
-            Object ret  = doInTransaction(undoLog, callable, resourceId);
+            UndoLog undoLog = new UndoLog(xid);
+            undoLog.setBeforeImage(sqlExecutor.beforeImage());
+            Object ret  = doInTransaction(undoLog, callable, xid);
+            undoLog.setAfterImage(sqlExecutor.afterImage());
 
+            //提交
+            commitConnection(xid, resourceId, lockKey);
             branchStatus = BranchStatus.PHASE1_DONE;
             return ret;
         } catch (TxLockException e) {
+            //回滚
+            rollbackConnection();
             //获取全局锁超时重试
-            if((System.currentTimeMillis() - startTime) >= timeout ){
+            long elapsed = System.currentTimeMillis() - startTime;
+            if(elapsed >= timeout){
                 branchStatus = BranchStatus.PHASE1_TIMEOUT;
                 throw new TxLockTimeoutException(timeout, e.getMessage());
             }
-            Thread.sleep(3000);
+            Thread.sleep((timeout-elapsed)/2);
             return doLocalTransaction(xid, callable, argContext, startTime);
         } catch (Exception e){
             branchStatus = BranchStatus.PHASE1_FAIL;
@@ -82,8 +84,22 @@ public class SimpleResourceManager implements ResourceManager {
         }
     }
 
+    private void rollbackConnection() {
+        //回滚
+    }
+
+    private boolean commitConnection(String xid, String resourceId, LockKey lockKey){
+        //注册分支事务，获取全局锁
+        if(!register(xid, resourceId, lockKey, this)){
+            throw new TxLockException(lockKey + " is locked.");
+        }
+        //flushUndoLogs(this);
+        //commit
+        return true;
+    }
+
     private boolean register(String xid, String resourceId, LockKey lockKey, ResourceManager rm) {
-        log.info(">>> branch register:xid={0}, resourceId={1}, {2}", xid, resourceId, lockKey.getValue());
+        log.info(">>> branch register:xid={0}, resourceId={1}", xid, resourceId);
         return tc.registerBranch(xid, resourceId, lockKey, rm);
     }
 
@@ -104,9 +120,9 @@ public class SimpleResourceManager implements ResourceManager {
      * @return
      * @throws Exception
      */
-    private Object doInTransaction(UndoLog undoLog, Callable callable, String resourceId) throws Exception {
-        log.info(">>> {0} unlog generated: {1}", resourceId, undoLog);
-        log.info(">>> {0} commit local db: {1}", resourceId);
+    private Object doInTransaction(UndoLog undoLog, Callable callable, String xid) throws Exception {
+        log.info(">>> UndoLog generated: {0}, {1}", xid, undoLog);
+        log.info(">>> commit local db: {0}", xid);
         return callable.call();
     }
 
@@ -119,7 +135,7 @@ public class SimpleResourceManager implements ResourceManager {
     @Override
     public boolean commitToTc(String xid, String resourceId) {
         //异步删除日志
-        log.info(">>>{0} {1} Unlog deleted", xid, resourceId);
+        log.info(">>> UndoLog deleted, {0}, {1}", xid, resourceId);
         return true;
     }
 
@@ -129,7 +145,7 @@ public class SimpleResourceManager implements ResourceManager {
     @Override
     public boolean rollbackToTc(String xid, String resourceId) {
         //TODO 查询日志，比较当前诗句是否和镜像一致，并执行回滚
-        log.info(">>>{0} {1}  rollback by undolog", xid, resourceId);
+        log.info(">>> Rollback by undoLog, {0}", xid);
         return true;
     }
 

@@ -22,11 +22,7 @@ public class BranchServiceA {
 
     private ResourceManager rm = new SimpleResourceManager();
 
-    private String bizType = "BranchServiceA.createOrder";
-
-    private String tableName = "ts_order";
-
-    private String keyName = "amount";
+    private String tableName = "order_main";
 
     public String createOrder(String xid, String amount) throws Exception {
         Object[] args = new Object[2];
@@ -37,7 +33,7 @@ public class BranchServiceA {
             public String call() throws Exception {
                 return create(ordNo, amount);
             }
-        }, new ArgContext(bizType, tableName, keyName, ordNo, args));
+        }, new ArgContext(tableName, "1,2", args));
     }
 
     private String create(String orderNo, String amount){

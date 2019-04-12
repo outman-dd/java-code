@@ -2,6 +2,8 @@ package code.distribution.transcation.common;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 〈一句话功能简述〉<p>
  * 〈功能详细描述〉
@@ -14,23 +16,20 @@ public class LockKey {
 
     private String tableName;
 
-    private String keyName;
-
-    private Object value;
+    private List<String> pkValues;
 
     public LockKey(ArgContext argContext) {
-        this(argContext.getTableName(), argContext.getKeyName(), argContext.getKeyValue());
+        this(argContext.getTableName(), argContext.getPkValues());
     }
 
-    public LockKey(String tableName, String keyName, Object value) {
+    public LockKey(String tableName, List<String> pkValues) {
         this.tableName = tableName;
-        this.keyName = keyName;
-        this.value = value;
+        this.pkValues = pkValues;
     }
 
     @Override
     public LockKey clone(){
-        return new LockKey(this.getTableName(), this.getKeyName(), this.getValue());
+        return new LockKey(this.getTableName(), this.getPkValues());
     }
 
 }

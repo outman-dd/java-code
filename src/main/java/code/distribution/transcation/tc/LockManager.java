@@ -3,8 +3,11 @@ package code.distribution.transcation.tc;
 import code.distribution.transcation.common.LockKey;
 import code.distribution.transcation.common.RoleType;
 import code.distribution.transcation.utils.Log;
+import io.netty.util.internal.ConcurrentSet;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -18,36 +21,50 @@ public class LockManager {
 
     private static Log log = Log.getLog(RoleType.TC);
 
-    private static ConcurrentHashMap<String/*bizType*/, ConcurrentHashMap<LockKey, String>> lockMap = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String/*resourceId*/, ConcurrentHashMap<String/*tableName*/, Map<String/*pk*/, String/*xid*/>>> lockMap = new ConcurrentHashMap<>();
 
     public static boolean lock(BranchSession branchSession) {
-        String bizType = branchSession.getBizType();
+        String resourceId = branchSession.getResourceId();
+        if(!lockMap.contains(resourceId)){
+            lockMap.putIfAbsent(resourceId, new ConcurrentHashMap<String, Map<String, String>>());
+        }
+
+        Map<String, Map<String, String>> dbLockMap = lockMap.get(resourceId);
         LockKey lockKey = branchSession.getLockKey();
-        if(!lockMap.contains(bizType)){
-            lockMap.putIfAbsent(bizType, new ConcurrentHashMap<LockKey, String>());
+        Map<String, String> tableLockMap = dbLockMap.get(lockKey.getTableName());
+        if(tableLockMap == null){
+            dbLockMap.put(lockKey.getTableName(), new HashMap<String, String>());
+            tableLockMap = dbLockMap.get(lockKey.getTableName());
         }
-        Map<LockKey, String> dbLock = lockMap.get(bizType);
 
-        String lockXid = dbLock.get(branchSession.getLockKey());
-        //不存在锁，则放入（考虑并发）
-        if(lockXid == null){
-            dbLock.putIfAbsent(lockKey, branchSession.getXid());
-            lockXid = dbLock.get(lockKey);
-        }
-        //重新判断是否当前xid持有该锁
-        if(branchSession.getXid().equals(lockXid)){
-            log.info("BranchSession get global lock success. {0}, xid={1}", lockKey, branchSession.getXid());
+        ConcurrentHashMap<Map<String, String>, Set<String>> lockHolder = branchSession.getLockHolder();
+        synchronized (tableLockMap){
+            String myXid = branchSession.getXid();
+            for(String pk : lockKey.getPkValues()){
+                String lockingXid = tableLockMap.get(pk);
+                //不存在锁，则放入（考虑并发）
+                if(lockingXid == null){
+                    tableLockMap.put(pk, myXid);
+                    Set<String> keysSet = lockHolder.get(tableLockMap);
+                    if (keysSet == null) {
+                        lockHolder.putIfAbsent(tableLockMap, new ConcurrentSet<String>());
+                        keysSet = lockHolder.get(tableLockMap);
+                    }
+                    keysSet.add(pk);
+                //重新判断是否当前xid持有该锁
+                }else if(!lockingXid.equals(myXid)){
+                    log.info("BranchSession get global lock fail, is hold by xid={0}, {1}:{2} ", lockingXid, lockKey.getTableName(), pk);
+                    //释放占用lock(其他pk值)
+                    branchSession.unlock();
+                    return false;
+                }else{
+                    //lock by me
+                    continue;
+                }
+            }
+            log.info("BranchSession get global lock success. xid={0}, {1}", branchSession.getXid(), lockKey);
             return true;
-        }else{
-            log.info("BranchSession get global lock fail, is hold by xid={0}, {1} ", lockXid, branchSession.getLockKey());
-            return false;
         }
-    }
 
-    public static void unlock(BranchSession branchSession) {
-        Map<LockKey, String> dbLock = lockMap.get(branchSession.getResourceId());
-        if(dbLock != null){
-            dbLock.remove(branchSession.getLockKey());
-        }
     }
 }

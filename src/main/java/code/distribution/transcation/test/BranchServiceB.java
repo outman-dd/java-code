@@ -22,11 +22,7 @@ public class BranchServiceB {
 
     private ResourceManager rm = new SimpleResourceManager();
 
-    private String bizType = "BranchServiceB.pay";
-
     private String tableName = "pay_order";
-
-    private String keyName = "ord_no";
 
     public void pay(String xid, String ordNo, String amount) throws Exception {
         Object[] args = new Object[2];
@@ -36,12 +32,12 @@ public class BranchServiceB {
             public Object call() throws Exception {
                 return create(ordNo, amount);
             }
-        }, new ArgContext(bizType, tableName, keyName, ordNo, args));
+        }, new ArgContext(tableName, ordNo, args));
     }
 
     private Object create(String orderNo, String amount) throws InterruptedException {
         log.info("pay order {0}, amount {1}", orderNo, amount);
-        Thread.sleep(new Random().nextInt(10)*1000);
+        Thread.sleep(new Random().nextInt(3)*1000);
         return "Ok";
         //throw new RuntimeException("pay timeout");
     }

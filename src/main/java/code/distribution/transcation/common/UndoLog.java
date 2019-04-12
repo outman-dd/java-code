@@ -18,9 +18,7 @@ public class UndoLog {
 
     private String afterImage;
 
-    public UndoLog(String xid, String beforeImage, String afterImage) {
+    public UndoLog(String xid) {
         this.xid = xid;
-        this.beforeImage = beforeImage;
-        this.afterImage = afterImage;
     }
 }

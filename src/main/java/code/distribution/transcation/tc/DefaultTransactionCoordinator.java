@@ -5,7 +5,6 @@ import code.distribution.transcation.common.BranchStatus;
 import code.distribution.transcation.common.GlobalStatus;
 import code.distribution.transcation.common.LockKey;
 import code.distribution.transcation.rm.ResourceManager;
-import code.distribution.transcation.utils.ResourceId;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -125,7 +124,6 @@ public class DefaultTransactionCoordinator implements TransactionCoordinator {
 
         BranchSession branchSession = new BranchSession(rm, xid, resourceId, lockKey);
         branchSession.setBranchStatus(BranchStatus.REGISTERD);
-        branchSession.setBizType(ResourceId.getBizType(resourceId));
 
         if(!branchSession.lock()){
             return false;
@@ -138,7 +136,7 @@ public class DefaultTransactionCoordinator implements TransactionCoordinator {
             branchSessionMap.put(xid, branchSessions);
         }else{
             for (BranchSession session : branchSessions) {
-                if(session.getBizType().equals(branchSession.getBizType())){
+                if(session.getResourceId().equals(branchSession.getResourceId())){
                     return true;
                 }
             }
@@ -155,8 +153,7 @@ public class DefaultTransactionCoordinator implements TransactionCoordinator {
             return false;
         }
 
-        String bizType = ResourceId.getBizType(resourceId);
-        BranchSession branchSession = findBranch(xid, bizType);
+        BranchSession branchSession = findBranch(xid, resourceId);
         if(branchSession != null){
             branchSession.setBranchStatus(branchStatus);
             return true;
@@ -164,11 +161,11 @@ public class DefaultTransactionCoordinator implements TransactionCoordinator {
         return false;
     }
 
-    private BranchSession findBranch(String xid, String bizType){
+    private BranchSession findBranch(String xid, String resourceId){
         List<BranchSession> branchSessions = branchSessionMap.get(xid);
         if(branchSessions != null){
             for (BranchSession session : branchSessions) {
-                if(session.getBizType().equals(bizType)){
+                if(session.getResourceId().equals(resourceId)){
                     return session;
                 }
             }

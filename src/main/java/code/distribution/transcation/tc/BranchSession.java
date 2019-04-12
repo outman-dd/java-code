@@ -5,6 +5,11 @@ import code.distribution.transcation.common.LockKey;
 import code.distribution.transcation.rm.ResourceManager;
 import lombok.Data;
 
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 〈一句话功能简述〉<p>
  * 〈功能详细描述〉
@@ -21,11 +26,11 @@ public class BranchSession {
 
     private String xid;
 
-    private String bizType;
-
     private String resourceId;
 
     private LockKey lockKey;
+
+    private ConcurrentHashMap<Map<String, String>, Set<String/*pk*/>> lockHolder = new ConcurrentHashMap();
 
     public BranchSession(ResourceManager resourceManager, String xid, String resourceId, LockKey lockKey) {
         this.resourceManager = resourceManager;
@@ -38,8 +43,27 @@ public class BranchSession {
         return LockManager.lock(this);
     }
 
-    public void unlock(){
-        LockManager.unlock(this);
+    public boolean unlock(){
+        if(lockHolder.size() == 0){
+            return true;
+        }
+
+        Iterator<Map.Entry<Map<String, String>, Set<String>>> it = lockHolder.entrySet().iterator();
+        while (it.hasNext()){
+            Map.Entry<Map<String, String>, Set<String>> entry = it.next();
+            Map<String, String> item = entry.getKey();
+            Set<String> pkValues = entry.getValue();
+            synchronized (item) {
+                for (String pk : pkValues) {
+                    String lockingXid = item.get(pk);
+                    if (xid.equals(lockingXid)) {
+                        item.remove(pk);
+                    }
+                }
+            }
+        }
+        lockHolder.clear();
+        return true;
     }
 
     @Override

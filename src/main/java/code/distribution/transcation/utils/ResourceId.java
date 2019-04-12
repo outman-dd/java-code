@@ -1,6 +1,7 @@
 package code.distribution.transcation.utils;
 
-import org.springframework.util.Assert;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 〈一句话功能简述〉<p>
@@ -11,15 +12,18 @@ import org.springframework.util.Assert;
  */
 public class ResourceId {
 
-    private static final String SEP = "@";
+    private static Map<String, String> map = new HashMap<String, String>();
 
-    public static String newResourceId(String bizType){
-        return bizType + SEP + Thread.currentThread().getName();
+    static {
+        map.put("order", "jdbc:mysql://db.tbj.com:3308/order");
+
+        map.put("pay", "jdbc:mysql://db.tbj.com:3308/pay");
+
     }
 
-    public static String getBizType(String resourceId){
-        Assert.isTrue(resourceId.contains(SEP), "");
-        return resourceId.split(SEP)[0];
+    public static String newResourceId(String tableName){
+        String prefix = tableName.substring(0, tableName.indexOf("_"));
+        return map.get(prefix);
     }
 
 }

@@ -28,7 +28,6 @@ public class SimpleSqlExecutor implements SqlExecutor{
 
     private LockKey query(){
         LockKey before = lockKey.clone();
-        before.setValue("500");
         return before;
     }
 
