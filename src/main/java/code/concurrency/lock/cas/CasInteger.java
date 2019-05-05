@@ -15,6 +15,10 @@ public class CasInteger implements Serializable{
 
     private static final Unsafe unsafe = UnsafeUtil.getUnsafe();
 
+    /**
+     * 获取对象某个属性的地址偏移值(相对对象起始内存地址)
+     * 所以同一个类的多个对象，同一个属性objectFieldOffset的值相同
+     */
     private static final long valueOffset;
 
     static {

@@ -164,7 +164,7 @@ public final class ExtensionLoader<S> {
             }
         }
 
-        public S find(String name){
+        public synchronized S find(String name){
             //if exist in cache
             if(providers.containsKey(name)){
                 return providers.get(name);
