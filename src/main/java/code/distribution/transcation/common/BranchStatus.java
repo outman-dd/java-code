@@ -9,7 +9,7 @@ package code.distribution.transcation.common;
  */
 public enum BranchStatus {
 
-    REGISTERD,
+    REGISTERED,
 
     PHASE1_DONE,
 

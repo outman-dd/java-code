@@ -123,7 +123,7 @@ public class DefaultTransactionCoordinator implements TransactionCoordinator {
         }
 
         BranchSession branchSession = new BranchSession(rm, xid, resourceId, lockKey);
-        branchSession.setBranchStatus(BranchStatus.REGISTERD);
+        branchSession.setBranchStatus(BranchStatus.REGISTERED);
 
         if(!branchSession.lock()){
             return false;
