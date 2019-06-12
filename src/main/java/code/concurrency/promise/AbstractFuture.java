@@ -1,0 +1,97 @@
+package code.concurrency.promise;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+/**
+ * 〈AbstractFuture〉<p>
+ *
+ * @author zixiao
+ * @date 2019/6/11
+ */
+public abstract class AbstractFuture<R> implements Future<R> {
+
+    protected volatile R result;
+
+    protected Throwable cause;
+
+    protected boolean done = false;
+
+    protected boolean cancelled = false;
+
+    protected CountDownLatch latch = new CountDownLatch(1);
+
+    protected Lock doneLock = new ReentrantLock();
+
+    protected AtomicReference<Callback> callbackReference = new AtomicReference<>();
+
+    @Override
+    public boolean isDone(){
+       return done;
+    }
+
+    @Override
+    public boolean isSuccess(){
+        return isDone() && result != null;
+    }
+
+    @Override
+    public boolean isCancelled(){
+        return isDone() && cancelled;
+    }
+
+    @Override
+    public boolean cancel(){
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public R get() throws InterruptedException, ExecutionException {
+        if(!isDone()){
+            latch.await();
+        }
+
+        if(isSuccess()){
+            return result;
+        }
+
+        if(isCancelled()){
+            throw new ExecutionException("Task has been cancelled", null);
+        }
+
+        throw new ExecutionException(cause);
+    }
+
+    @Override
+    public R get(long timeout, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException{
+        if(!isDone()){
+            if(latch.await(timeout, unit) && !isDone()){
+                throw new TimeoutException("Get result timeout");
+            }
+        }
+
+        if(isSuccess()){
+            return result;
+        }
+
+        if(isCancelled()){
+            throw new ExecutionException("Task has been cancelled", null);
+        }
+
+        throw new ExecutionException(cause);
+    }
+
+    protected void executeCallbackOnce(){
+        Callback callback = callbackReference.getAndSet(null);
+        if(callback != null){
+            callback.call();
+        }
+    }
+
+}
