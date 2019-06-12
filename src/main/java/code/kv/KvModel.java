@@ -1,5 +1,6 @@
 package code.kv;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -12,6 +13,7 @@ import java.io.Serializable;
  * @date 2019/5/9
  */
 @Data
+@AllArgsConstructor
 public class KvModel implements Serializable{
 
     private int id;

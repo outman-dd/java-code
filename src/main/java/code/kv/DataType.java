@@ -35,11 +35,6 @@ public enum DataType {
     DATE,
 
     /**
-     * 时间
-     */
-    TIME,
-
-    /**
      * 布尔
      */
     BOOLEAN;

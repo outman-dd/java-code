@@ -1,5 +1,6 @@
 package code.kv;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -12,9 +13,15 @@ import java.io.Serializable;
  * @date 2019/5/9
  */
 @Data
+@AllArgsConstructor
 public class KvTemplate implements Serializable{
 
     private int id;
+
+    /**
+     * 业务类型
+     */
+    private String bizType;
 
     /**
      * 字段编号
@@ -22,38 +29,34 @@ public class KvTemplate implements Serializable{
     private String fieldCode;
 
     /**
-     * 字段名称
-     */
-    private String fieldName;
-
-    /**
-     * 模型编号
-     */
-    private String modelCode;
-
-    /**
      * 字段类型
      */
     private DataType dataType;
 
     /**
-     * 必填
+     * 是否必填
      */
     private boolean required;
 
     /**
      * 非空白（针对字符串）
      */
-    boolean notBlank;
+    private boolean notBlank;
 
     /**
-     * 长度（针对字符串）
+     * 最大长度
      */
-    int maxLength;
+    private int maxLength;
 
     /**
      * 正则表达式
      */
-    String regex;
+    private String regex;
 
+    public KvTemplate(String biType, String fieldCode,  DataType dataType, boolean required) {
+        this.bizType = biType;
+        this.fieldCode = fieldCode;
+        this.dataType = dataType;
+        this.required = required;
+    }
 }
