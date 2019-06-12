@@ -164,21 +164,26 @@ public final class ExtensionLoader<S> {
             }
         }
 
-        public synchronized S find(String name){
+        public S find(String name){
             //if exist in cache
             if(providers.containsKey(name)){
                 return providers.get(name);
             }
 
-            //lookup
-            if (acc == null) {
-                return findService(name);
-            } else {
-                PrivilegedAction<S> action = new PrivilegedAction<S>() {
-                    @Override
-                    public S run() { return findService(name); }
-                };
-                return AccessController.doPrivileged(action, acc);
+            synchronized(this){
+                if(providers.containsKey(name)){
+                    return providers.get(name);
+                }
+                //lookup
+                if (acc == null) {
+                    return findService(name);
+                } else {
+                    PrivilegedAction<S> action = new PrivilegedAction<S>() {
+                        @Override
+                        public S run() { return findService(name); }
+                    };
+                    return AccessController.doPrivileged(action, acc);
+                }
             }
         }
 
