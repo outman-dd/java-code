@@ -8,10 +8,20 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustAllStrategy;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultConnectionKeepAliveStrategy;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.ssl.PrivateKeyDetails;
-import org.apache.http.ssl.PrivateKeyStrategy;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.impl.nio.conn.PoolingNHttpClientConnectionManager;
+import org.apache.http.impl.nio.reactor.DefaultConnectingIOReactor;
+import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.nio.conn.NHttpClientConnectionManager;
+import org.apache.http.nio.conn.NoopIOSessionStrategy;
+import org.apache.http.nio.conn.SchemeIOSessionStrategy;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
+import org.apache.http.nio.reactor.ConnectingIOReactor;
+import org.apache.http.nio.reactor.IOReactorException;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 
@@ -20,9 +30,7 @@ import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.Socket;
 import java.security.KeyStore;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -78,9 +86,10 @@ public class HttpClientBuilder {
      */
     private KeyStore trustStore;
 
-    private ConnectionSocketFactory socketFactory;
-
-    private ConnectionSocketFactory sslSocketFactory;
+    /**
+     * 空闲连接销毁线程
+     */
+    private IdleConnectionEvictor connEvictor;
 
     public static HttpClientBuilder custom(){
         return new HttpClientBuilder();
@@ -167,15 +176,39 @@ public class HttpClientBuilder {
         return this;
     }
 
-    private CloseableHttpClient buildClient(){
-        // 创建 ConnectionSocketFactory
-        createConnectionSocketFactory();
+    /**
+     * 构造同步HttpClient
+     *
+     * @return
+     */
+    public WrappedHttpClient build(){
+        return new WrappedHttpClient(buildSyncClient());
+    }
 
+    /**
+     * 构建异步HttpClient
+     *
+     * @return
+     */
+    public AsyncHttpClient buildAsync(){
+        CloseableHttpAsyncClient client = buildAsyncClient();
+        client.start();
+        if(connEvictor != null){
+            connEvictor.start();
+        }
+        return new AsyncHttpClient(client, connEvictor);
+    }
+
+    /**
+     * 构建同步Client
+     * @return
+     */
+    private CloseableHttpClient buildSyncClient(){
         // 配置支持的协议
         RegistryBuilder<ConnectionSocketFactory> registryBuilder = RegistryBuilder.<ConnectionSocketFactory> create()
-                .register("http", socketFactory);
-        if(enableSSL && sslSocketFactory != null){
-            registryBuilder.register("https", sslSocketFactory);
+                .register("http", PlainConnectionSocketFactory.getSocketFactory());
+        if(enableSSL){
+            registryBuilder.register("https", createSSLSocketFactory());
         }
 
         // 连接池管理类
@@ -190,36 +223,9 @@ public class HttpClientBuilder {
                 .build();
     }
 
-    /**
-     * 构造池化的HttpClient
-     *
-     * @return
-     */
-    public WrappedHttpClient build(){
-        return new WrappedHttpClient(buildClient());
+    private ConnectionSocketFactory createSSLSocketFactory(){
+        return new SSLConnectionSocketFactory(createSSLContext(), createHostnameVerifier());
     }
-
-    private void createConnectionSocketFactory(){
-        //Http
-        this.socketFactory = PlainConnectionSocketFactory.getSocketFactory();
-
-        //Https
-        if(enableSSL){
-            SSLContext sslContext = createSSLContext();
-
-            HostnameVerifier hostnameVerifier = null;
-            if(verifyHostname){
-                //开启主机名验证，https://publicsuffix.org/list
-                hostnameVerifier = SSLConnectionSocketFactory.getDefaultHostnameVerifier();
-            }else {
-                //使用 NoopHostnameVerifier 关闭主机名验证
-                hostnameVerifier = NoopHostnameVerifier.INSTANCE;
-            }
-
-            this.sslSocketFactory = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
-        }
-    }
-
 
     /**
      * 创建SSL上下文
@@ -230,15 +236,7 @@ public class HttpClientBuilder {
         try {
             if(keyStore != null){
                 // 携带客户端证书
-                sslContextBuilder.loadKeyMaterial(keyStore, keyPass.toCharArray(), new PrivateKeyStrategy() {
-                    @Override
-                    public String chooseAlias(Map<String, PrivateKeyDetails> aliases, Socket socket) {
-                        aliases.entrySet().forEach(entry -> {
-                            System.out.println(entry.getKey());
-                        });
-                        return "test";
-                    }
-                });
+                sslContextBuilder.loadKeyMaterial(keyStore, keyPass.toCharArray());
             }
             if(trustAll){
                 // 信任所有证书
@@ -252,6 +250,104 @@ public class HttpClientBuilder {
             throw new HttpClientException("创建SSL上下文异常", e);
         }
     }
+
+    /**
+     * 创建主机名验证器
+     * @return
+     */
+    private HostnameVerifier createHostnameVerifier(){
+        if(verifyHostname){
+            //开启主机名验证，https://publicsuffix.org/list
+            return SSLConnectionSocketFactory.getDefaultHostnameVerifier();
+        }else {
+            //使用 NoopHostnameVerifier 关闭主机名验证
+            return NoopHostnameVerifier.INSTANCE;
+        }
+    }
+
+    /**
+     * 构建异步Client
+     * @return
+     */
+    private CloseableHttpAsyncClient buildAsyncClient() {
+        // 配置支持的协议
+        RegistryBuilder<SchemeIOSessionStrategy> registryBuilder = RegistryBuilder.<SchemeIOSessionStrategy>create()
+                .register("http", NoopIOSessionStrategy.INSTANCE);
+        if(enableSSL){
+            registryBuilder.register("https", createSSLIOSessionStrategy());
+        }
+
+        ConnectingIOReactor ioReactor = createIOReactor();
+        PoolingNHttpClientConnectionManager manager = new PoolingNHttpClientConnectionManager(ioReactor, registryBuilder.build());
+        manager.setMaxTotal(maxTotal);
+        manager.setDefaultMaxPerRoute(defaultMaxPerRoute);
+
+        connEvictor = new IdleConnectionEvictor(manager, maxIdleTime);
+
+        return HttpAsyncClients.custom()
+                .setKeepAliveStrategy(DefaultConnectionKeepAliveStrategy.INSTANCE)
+                .setConnectionManager(manager)
+                .build();
+    }
+
+    private SchemeIOSessionStrategy createSSLIOSessionStrategy(){
+        return new SSLIOSessionStrategy(createSSLContext(), createHostnameVerifier());
+    }
+
+    private ConnectingIOReactor createIOReactor(){
+        //配置io线程
+        IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
+                .setIoThreadCount(Runtime.getRuntime().availableProcessors())
+                .setSoKeepAlive(true)
+                .build();
+        try {
+            return new DefaultConnectingIOReactor(ioReactorConfig);
+        } catch (IOReactorException e) {
+            throw new HttpClientException("Create IOReactor failed", e);
+        }
+    }
+
+    public static class IdleConnectionEvictor extends Thread {
+
+        private final NHttpClientConnectionManager connMgr;
+
+        private final long maxIdleTime;
+
+        private volatile boolean shutdown;
+
+        public IdleConnectionEvictor(NHttpClientConnectionManager connMgr, long maxIdleTime) {
+            super();
+            this.connMgr = connMgr;
+            this.maxIdleTime = maxIdleTime;
+        }
+
+        @Override
+        public void run() {
+            try {
+                while (!shutdown) {
+                    synchronized (this) {
+                        wait(maxIdleTime);
+                        // Close expired connections
+                        connMgr.closeExpiredConnections();
+                        // Optionally, close connections
+                        // that have been idle longer than 5 sec
+                        connMgr.closeIdleConnections(maxIdleTime, TimeUnit.MILLISECONDS);
+                    }
+                }
+            } catch (InterruptedException ex) {
+                // terminate
+            }
+        }
+
+        public void shutdown() {
+            shutdown = true;
+            synchronized (this) {
+                notifyAll();
+            }
+        }
+
+    }
+
 
     /**
      * 加载信任证书库

@@ -2,11 +2,10 @@ package code.concurrency.util;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  *〈并发模拟测试〉<p>
@@ -31,28 +30,22 @@ public class ConcurrentTest {
      * 原子变量，线程并发处理
      */
     @Test
-    public void testAtomic(){
-        try {
-            AtomicInteger atomicCount = new AtomicInteger(TASK_NUM);
-            ExecutorService executor = Executors.newFixedThreadPool(100);
-            List<Future> futureList = new ArrayList<Future>(TASK_NUM);
-            Future future = null;
-            for(int i=0;i<TASK_NUM;i++){
-                future = executor.submit(new AtomicTask(atomicCount));
-                futureList.add(future);
-            }
-            for(int i=0;i<TASK_NUM;i++){
-                future = futureList.get(i);
-                System.out.println("Task"+ i +", result:"+ future.get(20, TimeUnit.MILLISECONDS));
-            }
-            executor.shutdown();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (TimeoutException e) {
-            e.printStackTrace();
+    public void testAtomic() throws InterruptedException {
+        AtomicInteger atomicCount = new AtomicInteger(TASK_NUM);
+        ExecutorService executor = Executors.newFixedThreadPool(100);
+
+        for(int i=0; i<TASK_NUM; i++){
+            CompletableFuture<Integer> future = CompletableFuture.supplyAsync(new AtomicTask(atomicCount), executor);
+            future.whenComplete((r, t) ->{
+                if(t != null){
+                    t.printStackTrace();
+                }else{
+                    System.out.println("Task result:"+ r);
+                }
+            });
         }
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.SECONDS);
     }
 
     /**
@@ -125,7 +118,7 @@ public class ConcurrentTest {
 /**
  * 原子变量，线程安全
  */
-class AtomicTask implements Callable<Integer>{
+class AtomicTask implements Supplier<Integer>{
 
     private AtomicInteger atomicCount;
 
@@ -134,7 +127,7 @@ class AtomicTask implements Callable<Integer>{
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer get() {
         Random random = new Random();
         try {
             Thread.sleep(random.nextInt(5));

@@ -13,7 +13,7 @@ import java.io.IOException;
  * @author zixiao
  * @date 2019/5/16
  */
-public class HttpClientBuilderTest {
+public class HttpClientTest {
 
     private WrappedHttpClient wrappedHttpClient;
 
