@@ -65,7 +65,7 @@ public class CacheSnowCrash {
         Object value = cache.get(key);
         if (value == null) { //代表缓存值过期
             String lockKey = key;
-            String lockSeq = lock.getLock(lockKey);
+            lock.lock(lockKey);
             try {
                 //双重判断
                 if((value = cache.get(key)) == null){
@@ -74,7 +74,7 @@ public class CacheSnowCrash {
                     return value;
                 }
             } finally {
-                lock.unlock(lockKey, lockSeq);
+                lock.unlock(lockKey);
             }
         } else{
             return value;

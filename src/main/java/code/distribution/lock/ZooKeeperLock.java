@@ -41,8 +41,10 @@ public class ZooKeeperLock implements DistributedLock {
         zkClient = new ZkClient("zk.tbj.com:2181", 6000, 6000);
     }
 
+    private ThreadLocal<String> lockSeqHolder = new ThreadLocal<>();
+
     @Override
-    public String getLock(String key) {
+    public void lock(String key) {
         String lockPath = ROOT + SEP +  key;
         //1、新建已key作为节点名的锁lockPath
         if(!zkClient.exists(lockPath)){
@@ -60,7 +62,7 @@ public class ZooKeeperLock implements DistributedLock {
         //3、尝试获取锁
         tryGetLock(lockPath, myLockSeq);
 
-        return myLockSeq;
+        lockSeqHolder.set(myLockSeq);
     }
 
     /**
@@ -79,6 +81,7 @@ public class ZooKeeperLock implements DistributedLock {
         });
         // a、如果是序号最小的子节点, 则认为获得锁
         if(nodeSeqList.size() == 0 || nodeSeqList.size() == 1 || myLockSeq.equals(nodeSeqList.get(0))){
+            System.out.println(">>>Get lock on node " + myLockSeq);
             return;
         }
 
@@ -121,9 +124,13 @@ public class ZooKeeperLock implements DistributedLock {
     }
 
     @Override
-    public boolean unlock(String key, String lockSeq) {
+    public void unlock(String key) {
+        String lockSeq = lockSeqHolder.get();
         String lockFullPath = ROOT + SEP +  key + SEP +lockSeq;
-        return zkClient.delete(lockFullPath);
+        if(zkClient.delete(lockFullPath)){
+            lockSeqHolder.remove();
+        }
+        System.out.println(">>>Release lock on node " + lockSeq);
     }
 
     public static void main(String[] args) {
@@ -134,17 +141,15 @@ public class ZooKeeperLock implements DistributedLock {
             executorService.execute(new Runnable() {
                 @Override
                 public void run() {
-                    DistributedLock dsLock = new ZooKeeperLock();
+                    DistributedLock lock = new ZooKeeperLock();
                     String bizKey = "loanId-5";
-                    String lockSeq = dsLock.getLock(bizKey);
+                    lock.lock(bizKey);
                     try {
-                        System.out.println(Thread.currentThread().getName() + " get lock on " + lockSeq);
                         doBiz(bizKey);
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
-                        System.out.println(Thread.currentThread().getName() + " release on " + lockSeq);
-                        dsLock.unlock(bizKey, lockSeq);
+                        lock.unlock(bizKey);
                     }
                 }
             });

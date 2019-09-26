@@ -12,15 +12,14 @@ public interface DistributedLock {
     /**
      * 获取锁
      * @param key   业务Key
-     * @return      锁序号
+     * @return
      */
-    String getLock(String key);
+    void lock(String key);
 
     /**
      * 解锁
      * @param key     业务Key
-     * @param lockSeq 锁序号
      * @return
      */
-    boolean unlock(String key, String lockSeq);
+    void unlock(String key);
 }
