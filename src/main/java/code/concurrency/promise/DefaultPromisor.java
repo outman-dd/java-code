@@ -21,13 +21,20 @@ public class DefaultPromisor implements Promisor {
      * 启动异步任务的执行，并返回用于获取异步任务执行结果的凭据对象
      */
     @Override
-    public <R> Future<R> asyncExecute(Callable<R> callable){
-        if(callable == null){
+    public <R> Future<R> asyncExecute(Callable<R> callable) {
+        if (callable == null) {
             throw new NullPointerException("Callable can not be null");
         }
         Promise<R> promise = new DefaultPromise<>();
         try {
-            executorService.execute(new PromiseTask<>(promise, callable));
+            executorService.execute(() -> {
+                try {
+                    R r = callable.call();
+                    promise.trySuccess(r);
+                } catch (Exception e) {
+                    promise.tryFailure(e);
+                }
+            });
         } catch (RejectedExecutionException e) {
             promise.setFailure(e);
         }
@@ -40,35 +47,13 @@ public class DefaultPromisor implements Promisor {
         return future.get();
     }
 
-    private static class PromiseTask<R> implements Runnable{
-
-        private Promise<R> promise;
-
-        private Callable<R> callable;
-
-        public PromiseTask(Promise<R> promise, Callable<R> callable) {
-            this.promise = promise;
-            this.callable = callable;
-        }
-
-        @Override
-        public void run(){
-            try {
-                R r = callable.call();
-                promise.trySuccess(r);
-            } catch (Exception e) {
-                promise.tryFailure(e);
-            }
-        }
-    }
-
     @Override
-    public void shutdown(long time, TimeUnit unit){
+    public void shutdown(long time, TimeUnit unit) {
         executorService.shutdown();
         try {
             executorService.awaitTermination(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
     }
 

@@ -1,6 +1,5 @@
 package code.concurrency.promise;
 
-import code.util.ThreadPool;
 import org.junit.Test;
 
 import java.text.MessageFormat;
@@ -15,13 +14,13 @@ import java.util.concurrent.*;
  */
 public class PromiseTest {
 
-    private ExecutorService executorService = ThreadPool.create(100, 100, 1024);
+    private ExecutorService executorService = new ThreadPoolExecutor(64, 64, 5, TimeUnit.MINUTES, new ArrayBlockingQueue<Runnable>(256));
 
     private Promisor promisor = new DefaultPromisor(executorService);
 
     @Test
-    public void testAsync(){
-        for (int i = 0; i < 100; i++) {
+    public void testAsync() {
+        for (int i = 0; i < 2048; i++) {
             promisor.asyncExecute(new Task(i)).whenComplete((s, t) -> {
                 if (t != null) {
                     System.out.println("Completed fail: " + t.getMessage());

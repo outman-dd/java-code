@@ -7,7 +7,7 @@ package code.concurrency.promise;
  * @author zixiao
  * @date 2019/6/11
  */
-public class DefaultPromise<R> extends DefaultFuture<R> implements Promise<R> {
+public class DefaultPromise<R> extends AbstractFuture<R> implements Promise<R> {
 
     @Override
     public Future<R> getFuture() {
@@ -16,7 +16,7 @@ public class DefaultPromise<R> extends DefaultFuture<R> implements Promise<R> {
 
     @Override
     public Promise<R> setSuccess(R result) throws IllegalStateException {
-        if(trySuccess(result)){
+        if (trySuccess(result)) {
             return this;
         }
         throw new IllegalStateException("Set success exception.");
@@ -24,39 +24,29 @@ public class DefaultPromise<R> extends DefaultFuture<R> implements Promise<R> {
 
     @Override
     public boolean trySuccess(R result) {
-        if(result == null){
+        if (result == null) {
             throw new NullPointerException("Result can not be null");
         }
-        if(isDone()){
+        if (isDone()) {
             return false;
         }
 
         doneLock.lock();
         try {
-            if(!isDone()){
+            if (!isDone()) {
                 this.result = result;
                 setDone();
                 return true;
             }
-        }finally {
+        } finally {
             doneLock.unlock();
         }
         return false;
     }
 
-    /**
-     * 设置为完成
-     */
-    private void setDone(){
-        this.done = true;
-        latch.countDown();
-
-        executeCallbackOnce();
-    }
-
     @Override
     public Promise<R> setFailure(Throwable cause) {
-        if(tryFailure(cause)){
+        if (tryFailure(cause)) {
             return this;
         }
         throw new IllegalStateException("Set failure exception.");
@@ -64,21 +54,22 @@ public class DefaultPromise<R> extends DefaultFuture<R> implements Promise<R> {
 
     @Override
     public boolean tryFailure(Throwable cause) {
-        if(cause == null){
+        if (cause == null) {
             throw new NullPointerException("Cause can not be null");
         }
-        if(isDone()){
+
+        if (isDone()) {
             return false;
         }
 
         doneLock.lock();
         try {
-            if(!isDone()){
+            if (!isDone()) {
                 this.cause = cause;
                 setDone();
                 return true;
             }
-        }finally {
+        } finally {
             doneLock.unlock();
         }
         return false;

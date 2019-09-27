@@ -56,6 +56,16 @@ public interface Future <R> {
      */
     R get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
 
+    /**
+     * 完成回调
+     * @param callback
+     * @return
+     */
     Future<R> whenComplete(BiConsumer<? super R, ? super Throwable> callback);
+
+    /**
+     * 设置完成
+     */
+    void setDone();
 
 }
