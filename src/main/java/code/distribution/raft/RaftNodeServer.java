@@ -79,6 +79,8 @@ public class RaftNodeServer implements IService{
     public ClientRet handleClientRequest(ClientReq clientReq){
         if(node.getRole() == RoleType.FOLLOWER){
             return ClientRet.buildRedirect(node.getLeaderId());
+        }else if(node.getRole() == RoleType.CANDIDATE){
+            return ClientRet.buildRedirect(null);
         }
 
         if(clientReq.isRead()){

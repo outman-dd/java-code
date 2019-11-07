@@ -120,6 +120,19 @@ public class AppendEntriesSender implements ISender<AppendEntriesReq, AppendEntr
             }
         });
 
+        // 如果存在一个满足N > commitIndex的 N，并且大多数的matchIndex[i] ≥ N成立，
+        // 并且log[N].term == currentTerm成立，那么令 commitIndex 等于这个 N
+        List<Integer> matchIndexList = new ArrayList<>(node.getMatchIndex().values());
+        Collections.sort(matchIndexList);
+        int middle = matchIndexList.size()/2;
+        int N = matchIndexList.get(middle);
+        if(N > commitIndex){
+            LogEntry logN = node.getLogModule().indexOf(N);
+            if(logN != null && logN.getTerm() == currentTerm){
+                node.setCommitIndex(N);
+            }
+        }
+
         //多数派复制成功
         if (successNum.get() >= RaftNetwork.nodeNum() / 2) {
             LOGGER.info("多数派复制成功，success:{}， 提交日志，commitIndex:{}", successNum, newLogIndex);

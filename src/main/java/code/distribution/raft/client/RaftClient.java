@@ -47,6 +47,9 @@ public class RaftClient {
         ClientReq req = new ClientReq(true, KvCommand.buildGet(""));
         String node = clusterNodes.get(RandomUtils.nextInt(0, clusterNodes.size()));
         ClientRet ret = rpcClientService.invoke(node, req);
+        if (ret == null) {
+            return null;
+        }
         if (ret.isSuccess()) {
             return node;
         } else if (ret.getLeaderId() != null) {

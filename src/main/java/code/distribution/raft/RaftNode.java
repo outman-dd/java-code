@@ -3,18 +3,15 @@ package code.distribution.raft;
 import code.distribution.raft.enums.RoleType;
 import code.distribution.raft.fsm.StateMachine;
 import code.distribution.raft.log.LogModule;
-import code.distribution.raft.model.EntryIndex;
 import code.distribution.raft.model.LogEntry;
 import code.distribution.raft.model.VoteFor;
 import code.distribution.raft.util.SnapshotUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -158,7 +155,7 @@ public class RaftNode implements Serializable{
     public void changeToLeader(){
         if(role == RoleType.CANDIDATE){
             role = RoleType.LEADER;
-            initNextIndex();
+            initIndex();
         }
     }
 
@@ -172,15 +169,18 @@ public class RaftNode implements Serializable{
 
     /*************************************** logEntry ***************************************/
 
-    private void initNextIndex(){
+    private void initIndex(){
         // 每个follower的日志待发送位置初始化为leader最后日志位置+1
-        int nextIdx = logModule.lastLogIndex() + 1;
+        int initNextIndex = logModule.lastLogIndex() + 1;
         nextIndex.clear();
+        matchIndex.clear();
 
         Set<String> nodeIdSet = RaftNetwork.clusterNodeIds(nodeId);
         nodeIdSet.forEach(nodeId -> {
-            nextIndex.put(nodeId, nextIdx);
+            nextIndex.put(nodeId, initNextIndex);
+            matchIndex.put(nodeId, -1);
         });
+        commitIndex.set(-1);
     }
 
     public void saveSnapshot(){
