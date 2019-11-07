@@ -17,7 +17,7 @@ public class RpcCommand implements Serializable {
     /**
      * 序列化方式
      */
-    private SerializeType serializeType = SerializeType.JSON;
+    private SerializeType serializeType = SerializeType.Hessian;
 
     /**
      * 数据body
@@ -53,20 +53,17 @@ public class RpcCommand implements Serializable {
 
     public ByteBuffer encode() {
         /******* 计算数据长度 *******/
-        // 1> 数据长度占用size
-        int length = Protocol.LENGTH_FILED_LENGTH;
+        // 1> protocol type size
+        int length = Protocol.PROTOCOL_TYPE_LENGTH;
 
-        // 2> protocol type size
-        length += Protocol.PROTOCOL_TYPE_LENGTH;
-
-        // 3> body data length
+        // 2> body data length
         if (this.body != null) {
             length += body.length;
         }
 
         /******* 写入ByteBuffer *******/
         //分配空间
-        ByteBuffer result = ByteBuffer.allocate(length);
+        ByteBuffer result = ByteBuffer.allocate(Protocol.LENGTH_FILED_LENGTH + length);
 
         // 1、length
         result.putInt(length);

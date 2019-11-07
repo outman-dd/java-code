@@ -1,10 +1,16 @@
 package code.distribution.raft.election;
 
+import code.cache.redis.Redis;
 import code.distribution.raft.*;
+import code.distribution.raft.enums.RoleType;
+import code.distribution.raft.model.LogEntry;
 import code.distribution.raft.model.RequestVoteReq;
 import code.distribution.raft.model.RequestVoteRet;
 import code.distribution.raft.rpc.RpcService;
 import code.util.ThreadPool;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,13 +26,12 @@ import java.util.concurrent.ExecutorService;
  */
 public class RequestVoteSender implements ISender<RequestVoteReq, RequestVoteRet>, IService {
 
-    private final RaftNode node;
+    private static final Logger LOGGER = LoggerFactory.getLogger(RequestVoteSender.class);
 
-    private final ExecutorService broadcastExecutor;
+    private final RaftNode node;
 
     public RequestVoteSender(RaftNode node) {
         this.node = node;
-        this.broadcastExecutor = ThreadPool.create(4, 4, 512, "BroadcastVote-");
     }
 
     @Override
@@ -37,18 +42,32 @@ public class RequestVoteSender implements ISender<RequestVoteReq, RequestVoteRet
     public List<RequestVoteRet> broadcastRequestVote() {
         List<RequestVoteRet> requestVoteRets = new ArrayList<>();
         String myNodeId = node.getNodeId();
+
+        int lastLogIndex = -1;
+        int lastLogTerm = -1;
+        Pair<Integer, LogEntry> lastLogPair = node.getLogModule().lastLog();
+        if (lastLogPair != null) {
+            lastLogIndex = lastLogPair.getLeft();
+            lastLogTerm = lastLogPair.getRight().getTerm();
+        }
+        RequestVoteReq req = RequestVoteReq.build(node.currentTerm(), myNodeId, lastLogIndex, lastLogTerm);
+
         Set<String> nodeIdSet = RaftNetwork.clusterNodeIds(myNodeId);
-        RequestVoteReq req = RequestVoteReq.build(node.currentTerm(), myNodeId, 0, 0);
         nodeIdSet.parallelStream().forEach(nodeId -> {
-            RequestVoteRet ret = send(nodeId, req);
-            requestVoteRets.add(ret);
+            if (node.getRole() == RoleType.CANDIDATE) {
+                LOGGER.debug("Send vote request to {}", nodeId);
+                RequestVoteRet ret = send(nodeId, req);
+                if (ret != null) {
+                    requestVoteRets.add(ret);
+                }
+            }
         });
         return requestVoteRets;
     }
 
     @Override
     public void close() {
-        broadcastExecutor.shutdownNow();
+
     }
 
     @Override

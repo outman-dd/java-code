@@ -1,6 +1,9 @@
 package code.netty;
 
 import code.serialize.SerializeFactory;
+import code.serialize.SerializeType;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
@@ -27,25 +30,40 @@ public class NettyServerHandler extends SimpleChannelInboundHandler<RpcCommand> 
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, RpcCommand command) throws Exception {
-        handleRequest(ctx, command);
+    protected void channelRead0(ChannelHandlerContext ctx, RpcCommand request) throws Exception {
+        String requestStr = SerializeFactory.deserialize(request.getSerializeType(), request.getBody(), String.class);
+        LOGGER.info("Receive request: {}", requestStr);
+        handleRequest(ctx, request.getSerializeType(), requestStr);
     }
 
-    private void handleRequest(ChannelHandlerContext ctx, RpcCommand command) {
+    private void handleRequest(ChannelHandlerContext ctx, SerializeType serializeType, String requestStr) {
         try {
-            bizExecutor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    String requestStr = SerializeFactory.deserialize(command.getSerializeType(), command.getBody(), String.class);
-                    LOGGER.info("Receive request: ", requestStr);
-                    ctx.writeAndFlush(requestStr);
-                }
+            bizExecutor.execute(() -> {
+                String resp = "Hello " + requestStr;
+                writeResponse(ctx, serializeType, resp);
             });
         } catch (RejectedExecutionException e) {
-            ctx.writeAndFlush("Service is busy.");
-        } catch (Exception e){
-            ctx.writeAndFlush("Receive error:"+e.getMessage());
+            LOGGER.error("Service is busy.");
+            writeResponse(ctx, serializeType, "Service is busy.");
+        } catch (Exception e) {
+            LOGGER.error("Receive error:", e);
+            writeResponse(ctx, serializeType, "Receive error:" + e.getMessage());
         }
+    }
+
+    private void writeResponse(ChannelHandlerContext ctx, SerializeType serializeType, String responseStr) {
+        byte[] respBytes = SerializeFactory.serialize(serializeType, responseStr);
+        RpcCommand response = new RpcCommand(serializeType, respBytes);
+        ctx.writeAndFlush(response).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (future.isSuccess()) {
+                    System.out.println(">> writeAndFlush ok.");
+                } else {
+                    System.err.println(">> writeAndFlush fail.");
+                }
+            }
+        });
     }
 
     @Override

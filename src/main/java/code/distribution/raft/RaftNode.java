@@ -1,19 +1,19 @@
 package code.distribution.raft;
 
 import code.distribution.raft.enums.RoleType;
+import code.distribution.raft.fsm.StateMachine;
+import code.distribution.raft.log.LogModule;
 import code.distribution.raft.model.EntryIndex;
 import code.distribution.raft.model.LogEntry;
 import code.distribution.raft.model.VoteFor;
+import code.distribution.raft.util.SnapshotUtils;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.ToString;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -69,7 +69,12 @@ public class RaftNode implements Serializable{
      * 日志条目集；
      * 每一个条目包含一个用户状态机执行的指令，和收到时的任期号
      */
-    private List<LogEntry> logs;
+    private LogModule logModule;
+
+    /**
+     * 状态机
+     */
+    private StateMachine stateMachine;
 
     /**
      * 已知的最大的已经被提交的日志条目的索引值
@@ -86,22 +91,26 @@ public class RaftNode implements Serializable{
      * 对于每一个服务器，需要发送给他的下一个日志条目的索引值
      * 初始化为领导人最后索引值加一
      */
-    private transient List<EntryIndex> nextIndex = new ArrayList<>(32);
+    private transient Map<String, Integer> nextIndex = new HashMap<>(32);
 
     /**
      * 对于每一个服务器，已经复制给他的日志的最高索引值
      */
-    private transient List<EntryIndex> matchIndex = new ArrayList<>(32);
+    private transient Map<String, Integer> matchIndex = new HashMap<>(32);
+
+    private String leaderId;
 
     private transient ReentrantReadWriteLock logLock = new ReentrantReadWriteLock();
 
     private transient ReentrantLock voteLock = new ReentrantLock();
 
-    public RaftNode(String nodeId) {
+    public RaftNode(String nodeId, StateMachine stateMachine) {
         this.nodeId = nodeId;
+        this.stateMachine = stateMachine;
+
         this.role = RoleType.FOLLOWER;
         this.currentTerm = new AtomicInteger(0);
-        this.logs = new CopyOnWriteArrayList<>();
+        this.logModule = new LogModule();
         this.commitIndex = new AtomicInteger(-1);
         this.lastApplied = new AtomicInteger(-1);
     }
@@ -138,15 +147,6 @@ public class RaftNode implements Serializable{
         return false;
     }
 
-    public void initNextIndex(){
-        nextIndex.clear();
-        Set<String> nodeIdSet = RaftNetwork.clusterNodeIds(nodeId);
-        int nextIdx = commitIndex.get() + 1;
-        nodeIdSet.forEach(nodeId -> {
-            nextIndex.add(new EntryIndex(nodeId, nextIdx));
-        });
-    }
-
     /*************************************** role change ***************************************/
 
     public void changeToCandidate(){
@@ -166,59 +166,53 @@ public class RaftNode implements Serializable{
         role = RoleType.FOLLOWER;
     }
 
+    public void setLeader(String leaderId){
+        this.leaderId = leaderId;
+    }
+
     /*************************************** logEntry ***************************************/
-    public LogEntry logIndexOf(int logIndex){
-        logLock.readLock().lock();
-        try {
-            if(logs.size() > logIndex){
-                return logs.get(logIndex);
-            }else{
-                return null;
-            }
-        }finally {
-            logLock.readLock().unlock();
+
+    private void initNextIndex(){
+        // 每个follower的日志待发送位置初始化为leader最后日志位置+1
+        int nextIdx = logModule.lastLogIndex() + 1;
+        nextIndex.clear();
+
+        Set<String> nodeIdSet = RaftNetwork.clusterNodeIds(nodeId);
+        nodeIdSet.forEach(nodeId -> {
+            nextIndex.put(nodeId, nextIdx);
+        });
+    }
+
+    public void saveSnapshot(){
+        SnapshotUtils.save(this);
+    }
+
+    /*************************************** state machine ***************************************/
+
+    /**
+     * 应用状态机到commitIndex位置为止
+     * @param commitIndex
+     */
+    public void applyTo(int commitIndex){
+        synchronized (stateMachine){
+            int startApplyIndex = lastApplied.get() + 1;
+            List<LogEntry> toApplyLogs = logModule.subLogs(startApplyIndex, commitIndex);
+            toApplyLogs.forEach(logEntry -> {
+                stateMachine.apply(logEntry);
+            });
+            lastApplied.set(commitIndex);
         }
     }
 
-    public void logRemoveFrom(int fromIndex){
-        logLock.writeLock().lock();
-        try{
-            if(logs.size() > fromIndex){
-                Iterator<LogEntry> iterator = logs.iterator();
-                int startIndex = 0;
-                while (iterator.hasNext()){
-                    iterator.next();
-                    if(startIndex >= fromIndex){
-                        iterator.remove();
-                    }
-                    startIndex++;
-                }
-            }
-        }finally {
-            logLock.writeLock().unlock();
-        }
-    }
-
-    public void logAppend(int index, LogEntry entry) {
-        logLock.writeLock().lock();
-        try{
-            logs.add(index, entry);
-        }finally {
-            logLock.writeLock().unlock();
-        }
-    }
-
-    public Pair<Integer, LogEntry> lastLog(){
-        logLock.readLock().lock();
-        try {
-            if(logs.size() == 0){
-                return null;
-            }else{
-                int lastIndex = logs.size()-1;
-                return Pair.of(lastIndex, logs.get(lastIndex));
-            }
-        }finally {
-            logLock.readLock().unlock();
+    /**
+     * 应用状态机 TODO 异步处理
+     * @param logEntry
+     * @param logIndex
+     */
+    public void apply(LogEntry logEntry, int logIndex){
+        synchronized (stateMachine){
+            stateMachine.apply(logEntry);
+            lastApplied.set(logIndex);
         }
     }
 

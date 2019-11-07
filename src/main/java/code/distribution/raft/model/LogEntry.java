@@ -24,5 +24,5 @@ public class LogEntry implements Serializable {
     /**
      * 被复制的用户状态机执行的指令
      */
-    private Object command;
+    private Command command;
 }

@@ -11,15 +11,17 @@ import java.util.*;
  */
 public class RaftNetwork {
 
-    private static Map<String, RaftNodeServer> nodeMap = new HashMap<>();
+    private static Set<String> nodeSet = new HashSet<>();
 
-    public static void register(String nodeId, RaftNodeServer nodeServer){
-        nodeMap.put(nodeId, nodeServer);
+    public static void config(String ... nodeIds){
+        for (String nodeId : nodeIds) {
+            nodeSet.add(nodeId);
+        }
     }
 
     public static Set<String> clusterNodeIds(String selfId){
         Set<String> nodeIds = new HashSet<>();
-        Iterator<String> iterator = nodeMap.keySet().iterator();
+        Iterator<String> iterator = nodeSet.iterator();
         while (iterator.hasNext()){
             String nodeId = iterator.next();
             if(!selfId.equals(nodeId)){
@@ -30,15 +32,6 @@ public class RaftNetwork {
     }
 
     public static int nodeNum(){
-       return nodeMap.size();
+       return nodeSet.size();
     }
-
-    public static RaftNodeServer nodeServer(String nodeId){
-        return nodeMap.get(nodeId);
-    }
-
-    public static void offline(String nodeId){
-        nodeMap.remove(nodeId);
-    }
-
 }

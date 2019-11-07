@@ -6,6 +6,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -29,6 +30,20 @@ public class WrappedHttpClient implements Closeable{
 
     public WrappedHttpClient(CloseableHttpClient client) {
         this.client = client;
+    }
+
+    /**
+     * Post方式
+     *
+     * @param url       请求地址
+     * @param config    请求配置
+     * @param bytes     字节数组
+     * @return
+     * @throws IOException
+     */
+    public WrappedHttpResponse post(String url, HttpRequestConfig config, byte[] bytes) throws IOException{
+        HttpEntity entity = new ByteArrayEntity(bytes);
+        return post(url, config, entity);
     }
 
     /**
@@ -73,7 +88,11 @@ public class WrappedHttpClient implements Closeable{
             }
             response = client.execute(post);
 
-            return handleResponse(response, config.getCharset());
+            if (entity instanceof StringEntity) {
+                return handleResponse(response, true, config.getCharset());
+            } else {
+                return handleResponse(response, false, null);
+            }
         } finally {
             try {
                 if(response != null){
@@ -83,21 +102,26 @@ public class WrappedHttpClient implements Closeable{
         }
     }
 
-    private WrappedHttpResponse handleResponse(CloseableHttpResponse response, String charset) throws IOException {
+    private WrappedHttpResponse handleResponse(CloseableHttpResponse response, boolean isString, String charset) throws IOException {
         InputStream input = null;
         try {
             int status = response.getStatusLine().getStatusCode();
-            String data = null;
-            if (status == HttpStatus.SC_OK) {
-                input = response.getEntity().getContent();
-                data = IOUtils.toString(input, charset);
+            String reason = response.getStatusLine().getReasonPhrase();
+            if (status != HttpStatus.SC_OK) {
+                return new StringHttpResponse(status, reason, null);
             }
-            return new WrappedHttpResponse(status, response.getStatusLine().getReasonPhrase(), data);
+            input = response.getEntity().getContent();
+            if (isString) {
+                return new StringHttpResponse(status, reason, IOUtils.toString(input, charset));
+            } else {
+                return new ByteHttpResponse(status, reason, IOUtils.toByteArray(input));
+            }
         } finally {
-            if(input != null){
+            if (input != null) {
                 try {
                     input.close();
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                }
             }
         }
     }

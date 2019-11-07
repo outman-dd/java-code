@@ -61,8 +61,14 @@ public class AppendEntriesReq implements Serializable{
         this.leaderId = leaderId;
     }
 
-    public static AppendEntriesReq buildHeartbeat(int term, String leaderId){
-        return new AppendEntriesReq(term, leaderId);
+    public AppendEntriesReq(int term, String leaderId, int leaderCommit) {
+        this.term = term;
+        this.leaderId = leaderId;
+        this.leaderCommit = leaderCommit;
+    }
+
+    public static AppendEntriesReq buildHeartbeat(int term, String leaderId, int leaderCommit){
+        return new AppendEntriesReq(term, leaderId, leaderCommit);
     }
 
     public static AppendEntriesReq build(int term, String leaderId, int prevLogIndex, int prevLogTerm,

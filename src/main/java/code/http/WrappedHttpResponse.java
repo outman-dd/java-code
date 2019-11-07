@@ -1,6 +1,5 @@
 package code.http;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 /**
@@ -10,14 +9,11 @@ import lombok.Data;
  * @author zixiao
  * @date 2019/5/16
  */
-@Data
-@AllArgsConstructor
-public class WrappedHttpResponse {
+public interface WrappedHttpResponse<T> {
 
-    private int statusCode;
+    int getStatusCode();
 
-    private String reasonPhrase;
+    String getReasonPhrase();
 
-    private String data;
-
+    T getData();
 }
