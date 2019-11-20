@@ -1,13 +1,14 @@
 package code.distribution.raft.election;
 
-import code.cache.redis.Redis;
-import code.distribution.raft.*;
+import code.distribution.raft.ISender;
+import code.distribution.raft.IService;
+import code.distribution.raft.RaftNetwork;
+import code.distribution.raft.RaftNode;
 import code.distribution.raft.enums.RoleType;
 import code.distribution.raft.model.LogEntry;
 import code.distribution.raft.model.RequestVoteReq;
 import code.distribution.raft.model.RequestVoteRet;
 import code.distribution.raft.rpc.RpcService;
-import code.util.ThreadPool;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 /**
  * 〈请求投票 发送器〉<p>

@@ -120,29 +120,16 @@ public class AppendEntriesSender implements ISender<AppendEntriesReq, AppendEntr
             }
         });
 
-        // 如果存在一个满足N > commitIndex的 N，并且大多数的matchIndex[i] ≥ N成立，
-        // 并且log[N].term == currentTerm成立，那么令 commitIndex 等于这个 N
-        List<Integer> matchIndexList = new ArrayList<>(node.getMatchIndex().values());
-        Collections.sort(matchIndexList);
-        int middle = matchIndexList.size()/2;
-        int N = matchIndexList.get(middle);
-        if(N > commitIndex){
-            LogEntry logN = node.getLogModule().indexOf(N);
-            if(logN != null && logN.getTerm() == currentTerm){
-                node.setCommitIndex(N);
-            }
-        }
-
         //多数派复制成功
-        if (successNum.get() >= RaftNetwork.nodeNum() / 2) {
-            LOGGER.info("多数派复制成功，success:{}， 提交日志，commitIndex:{}", successNum, newLogIndex);
+        if (node.getRole() == RoleType.LEADER && successNum.get() >= RaftNetwork.nodeNum() / 2) {
             //日志提交, commitIndex在下次AppendEntries给其他节点（也可以放在心跳）
-            node.setCommitIndex(newLogIndex);
+            updateCommitIndex(commitIndex, currentTerm);
+            LOGGER.info("多数派复制成功，success:{}， 提交日志，commitIndex:{}", successNum, node.getCommitIndex().get());
 
             //失败的节点 添加重试列表
             toRetryAppendNodeMap.putAll(tempRetryNodeMap);
 
-            //应用状态机，TODO 异步处理
+            //应用状态机
             node.apply(logEntry, newLogIndex);
             return true;
         } else {
@@ -153,6 +140,25 @@ public class AppendEntriesSender implements ISender<AppendEntriesReq, AppendEntr
             //清空重试列表
             tempRetryNodeMap.clear();
             return false;
+        }
+    }
+
+    /**
+     * 如果存在一个满足N > commitIndex的 N，并且大多数的matchIndex[i] ≥ N成立，
+     * 并且log[N].term == currentTerm成立，那么令 commitIndex 等于这个 N
+     * @param commitIndex
+     * @param currentTerm
+     */
+    private void updateCommitIndex(int commitIndex, int currentTerm){
+        List<Integer> matchIndexList = new ArrayList<>(node.getMatchIndex().values());
+        Collections.sort(matchIndexList);
+        int middle = matchIndexList.size()/2;
+        int N = matchIndexList.get(middle);
+        if(N > commitIndex){
+            LogEntry logN = node.getLogModule().indexOf(N);
+            if(logN != null && logN.getTerm() == currentTerm){
+                node.setCommitIndex(N);
+            }
         }
     }
 
