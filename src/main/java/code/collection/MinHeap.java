@@ -5,7 +5,7 @@ import java.util.*;
 /**
  * 〈最小堆〉<p>
  * 固定容量，解决TopK问题，满足公平性，即当值相等时，保留先放入的值
- *
+ * 复杂度：log(k)
  * @author zixiao
  * @date 2019/2/21
  */
