@@ -1,4 +1,4 @@
-package code.algorithm.wordcount;
+package code.algorithm.divideconquer;
 
 import code.collection.MinHeap;
 import code.collection.MinArray;
@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * 〈WorkCount〉<p>
- * 〈功能详细描述〉
+ * MapReduce，分治算法
  *
  * @author zixiao
  * @date 2019/2/21

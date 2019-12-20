@@ -1,4 +1,4 @@
-package code.algorithm;
+package code.algorithm.hash;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
