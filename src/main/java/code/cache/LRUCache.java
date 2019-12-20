@@ -10,24 +10,24 @@ import java.util.Map;
  * @author zixiao
  * @date 2019/2/25
  */
-public class LRUCache implements ICache<String, Object>{
+public class LRUCache<K, V> implements ICache<K, V>{
 
     private int maxSize;
 
-    private Map<String, DoubleLinkNode> map = new HashMap<>();
+    private Map<K, DoubleLinkNode<K, V>> map = new HashMap<>();
 
-    private DoubleLinkNode head;
+    private DoubleLinkNode<K, V> head;
 
-    private DoubleLinkNode tail;
+    private DoubleLinkNode<K, V> tail;
 
     public LRUCache(int maxSize){
         this.maxSize = maxSize;
     }
 
     @Override
-    public Object get(String key) {
+    public V get(K key) {
         if(map.containsKey(key)){
-            DoubleLinkNode node = map.get(key);
+            DoubleLinkNode<K, V> node = map.get(key);
             if(head != node){
                 breakLink(node);
                 addToHead(node);
@@ -95,12 +95,12 @@ public class LRUCache implements ICache<String, Object>{
     }
 
     @Override
-    public boolean exist(String key) {
+    public boolean exist(K key) {
         return map.containsKey(key);
     }
 
     @Override
-    public Object set(String key, Object value) {
+    public V set(K key, V value) {
         if(map.containsKey(key)){
             DoubleLinkNode node = map.get(key);
             node.value = value;
@@ -121,12 +121,12 @@ public class LRUCache implements ICache<String, Object>{
     }
 
     @Override
-    public Object set(String key, Object value, int expireSeconds) {
+    public V set(K key, V value, int expireSeconds) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean setnx(String key, Object value) {
+    public boolean setnx(K key, V value) {
         if(map.containsKey(key)){
            return false;
         }
@@ -135,14 +135,14 @@ public class LRUCache implements ICache<String, Object>{
     }
 
     @Override
-    public void expire(String key, int expireSeconds) {
+    public void expire(K key, int expireSeconds) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Object delete(String key) {
+    public V delete(K key) {
         if(map.containsKey(key)){
-            DoubleLinkNode node = map.get(key);
+            DoubleLinkNode<K, V> node = map.get(key);
             map.remove(key);
             if(head != node){
                 breakLink(node);
@@ -161,17 +161,17 @@ public class LRUCache implements ICache<String, Object>{
         tail = null;
     }
 
-    class DoubleLinkNode{
+    class DoubleLinkNode<K, V>{
 
-        private String key;
+        private K key;
 
-        private Object value;
+        private V value;
 
-        private DoubleLinkNode prev;
+        private DoubleLinkNode<K, V> prev;
 
-        private DoubleLinkNode next;
+        private DoubleLinkNode<K, V> next;
 
-        public DoubleLinkNode(String key, Object value) {
+        public DoubleLinkNode(K key, V value) {
             this.key = key;
             this.value = value;
         }

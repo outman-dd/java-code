@@ -41,7 +41,7 @@ public class SimpleCache<K, V> implements ICache<K, V> {
                 while (iterator.hasNext()){
                     Map.Entry<K,Long> entry = iterator.next();
                     if(entry.getValue() <= System.currentTimeMillis()){
-                        System.out.println("缓存过期移除key："+entry.getKey());
+                        System.out.println("[DEBUG]Cache expired key："+entry.getKey());
                         iterator.remove();
                         dataMap.remove(entry.getKey());
                     }

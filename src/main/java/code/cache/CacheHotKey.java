@@ -1,5 +1,8 @@
 package code.cache;
 
+import code.cache.db.IDb;
+import code.cache.db.SimpleDb;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 

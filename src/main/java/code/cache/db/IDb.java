@@ -1,4 +1,4 @@
-package code.cache;
+package code.cache.db;
 
 /**
  * 〈DB〉<p>
@@ -15,4 +15,5 @@ public interface IDb<K, V> {
 
     V remove(K key);
 
+    void close();
 }

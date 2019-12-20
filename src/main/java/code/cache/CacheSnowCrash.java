@@ -1,5 +1,7 @@
 package code.cache;
 
+import code.cache.db.IDb;
+import code.cache.db.SimpleDb;
 import code.distribution.lock.DistributedLock;
 import code.distribution.lock.ZooKeeperLock;
 
