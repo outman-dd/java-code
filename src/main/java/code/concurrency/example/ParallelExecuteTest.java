@@ -155,7 +155,7 @@ public class ParallelExecuteTest {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        return ("Http://file.test.com/" +url).getBytes();
+        return ("Http://file.boot.com/" +url).getBytes();
     }
 
     public void shutdown(){

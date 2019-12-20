@@ -128,7 +128,7 @@ public class TokenBucket {
         Thread.sleep(1000);
 
         for(int i=0; i<500; i++){
-            Object ticket = tokenBucket.getWithBlocking();
+            Object ticket = tokenBucket.get();
             if(ticket == null){
                 System.out.println("Flow control for a while");
                 Thread.sleep(20);

@@ -8,6 +8,8 @@ import java.util.concurrent.locks.LockSupport;
 /**
  * 〈队列同步器〉<p>
  * 〈功能详细描述〉
+ * SyncQueue:  [Head(thread=null)] <--prev [Node] next--> ... [Tail]
+ * 同步状态，0代表锁未被占用，>=1代表锁已被占用
  *
  * @author zixiao
  * @date 2019/3/14

@@ -27,6 +27,7 @@ public class DefaultPromise<R> extends AbstractFuture<R> implements Promise<R> {
         if (result == null) {
             throw new NullPointerException("Result can not be null");
         }
+
         if (isDone()) {
             return false;
         }

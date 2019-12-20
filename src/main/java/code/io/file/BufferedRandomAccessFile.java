@@ -283,7 +283,7 @@ public final class BufferedRandomAccessFile extends RandomAccessFile
     {
         if (this.curr_ >= this.hi_)
         {
-            // test for EOF
+            // boot for EOF
             // if (this.hi < this.maxHi) return -1;
             if (this.hitEOF_)
                 return -1;
@@ -307,7 +307,7 @@ public final class BufferedRandomAccessFile extends RandomAccessFile
     {
         if (this.curr_ >= this.hi_)
         {
-            // test for EOF
+            // boot for EOF
             // if (this.hi < this.maxHi) return -1;
             if (this.hitEOF_)
                 return -1;

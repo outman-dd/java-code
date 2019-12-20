@@ -63,7 +63,7 @@ public class StringFileReader {
                 if (pin == null || pin.isEmpty()) {
                     break;
                 }
-                dataList.add(pin);
+                dataList.add(new String(pin.getBytes("ISO-8859-1"), "UTF-8"));
             }
             nextPos = reader.getFilePointer();
             return dataList;
