@@ -18,6 +18,16 @@ public class RedisLock implements DistributedLock {
 
     private RedisClient redisClient = new RedisClient();
 
+    private final UUID id;
+
+    public RedisLock() {
+        this.id = UUID.randomUUID();
+    }
+
+    public RedisLock(UUID id) {
+        this.id = id;
+    }
+
     @Override
     public void lock(String key) {
         long expired = 3000;
@@ -55,16 +65,15 @@ public class RedisLock implements DistributedLock {
         private Map<String, ExpiredObject> expiredMap = new HashMap<>();
 
         public Long tryLockInner(String lockKey, String threadId, long expiredMills){
-            String threadUk = UUID.randomUUID().toString() + threadId;
-            //lua保证张一个事务里面
+            String threadUk = id + threadId;
+            //lua保证在 synchronized 块，一个事务里面
             synchronized (lockHolder){
                 if(!exist(lockKey)){
                     hset(lockKey, threadUk, 1);
                     pexpire(lockKey, expiredMills);
                     System.out.println("Lock success, I'm the first guy.");
                     return null;
-                }
-                else if(hexist(lockKey, threadUk)){
+                } else if(hexist(lockKey, threadUk)){
                     int locks = hincrby(lockKey, threadUk, 1);
                     pexpire(lockKey, expiredMills);
                     System.out.println("Locked by me(reentrant), locks="+locks);
