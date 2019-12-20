@@ -31,7 +31,7 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.5.Final</version>
+            <version>4.1.22.Final</version>
         </dependency>
 
         <!-- Protostuff -->
@@ -55,7 +55,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.31</version>
+            <version>1.2.62</version>
         </dependency>
         <!-- hessian -->
         <dependency>
@@ -97,7 +97,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
-            <version>4.3.18.RELEASE</version>
+            <version>4.3.25.RELEASE</version>
         </dependency>
 
         <dependency>
@@ -146,6 +146,12 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <version>2.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.3.7</version>
         </dependency>
 
     </dependencies>
