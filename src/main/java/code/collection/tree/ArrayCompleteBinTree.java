@@ -3,7 +3,7 @@ package code.collection.tree;
 import java.util.Arrays;
 
 /**
- * 〈一句话功能简述〉<p>
+ * 〈数组实现完全二叉树〉<p>
  * 〈功能详细描述〉
  *
  * @author zixiao

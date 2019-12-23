@@ -35,8 +35,13 @@ public class IndexNode extends TreeNode {
     }
 
     public TreeNode findChild(int key){
-        for (int i = 0; i < keySize; i++) {
-            if(key < keys[i]){
+        if (key < keys[0]) {
+            return children[0];
+        } else if (key == keys[0]) {
+            return children[1];
+        }
+        for (int i = 1; i < keySize; i++) {
+            if (key > keys[i-1] && key < keys[i]) {
                 return children[i];
             }else if(key == keys[i]){
                 return children[i+1];

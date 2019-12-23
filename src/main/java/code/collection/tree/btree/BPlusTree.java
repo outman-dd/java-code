@@ -9,8 +9,7 @@ import java.util.List;
 
 /**
  * 〈B+树〉<p>
- * 〈功能详细描述〉
- *
+ * h = log m (N)， m越大，h越小
  * @author zixiao
  * @date 2019/12/20
  * @see https://blog.csdn.net/Fmuma/article/details/80287924
@@ -19,7 +18,7 @@ public class BPlusTree {
 
     private TreeNode root;
 
-    public static int m = 5;
+    public static int m;
 
     public BPlusTree(int m) {
         BPlusTree.m = m;
@@ -147,11 +146,10 @@ public class BPlusTree {
     public List<Long> range(int fromKey, int toKey) {
         List<Long> dataList = new ArrayList<>();
         LeafNode from = findLeafNode(fromKey);
-        LeafNode to = null;
-        Integer fromLast = from.keys[from.keySize - 1];
+        Integer fromMaxKey = from.keys[from.keySize - 1];
 
         //1 数据在一个节点上
-        if (fromLast > toKey || (to = findLeafNode(toKey)) == from) {
+        if (fromMaxKey >= toKey) {
             for (int i = 0; i < from.keySize; i++) {
                 if (from.keys[i] >= fromKey && from.keys[i] <= toKey) {
                     dataList.add(from.getDataAddr()[i]);
@@ -161,6 +159,7 @@ public class BPlusTree {
         }
 
         //2 数据分布在多个节点上
+        LeafNode to = findLeafNode(toKey);
         LeafNode node = from;
         while (node != null) {
             if (node != from && node != to) {
@@ -241,50 +240,54 @@ public class BPlusTree {
          *      [7      9]              [13       15]
          * [5,6]->[7,8]->[9,10]->[11,12]->[13,14]->[15,16,17]
          */
-        bPlusTree.insert(5, 1);
-        bPlusTree.insert(6, 2);
-        bPlusTree.insert(7, 3);
-        bPlusTree.insert(8, 4);
-        bPlusTree.insert(9, 5);
-        bPlusTree.insert(10, 6);
-        bPlusTree.insert(11, 7);
-        bPlusTree.insert(12, 8);
-        bPlusTree.insert(13, 9);
-        bPlusTree.insert(14, 10);
-        bPlusTree.insert(15, 11);
-        bPlusTree.insert(16, 12);
-        bPlusTree.insert(17, 13);
+        for (int i = 5; i <= 17; i++) {
+            bPlusTree.insert(i, i+100);
+        }
         bPlusTree.print();
 
         /**
          * 				          [11            ,           17]
-         * 		  [7,   9,]		           [13,     15]               [19,     21]
+         * 		  [7,     9]		       [13,     15]               [19,     21]
          *   [5,6]->[7,8] ->[9,10]->[11,12]->[13,14]->[15,16]->[17,18]->[19,20]->[21,22,23]
          */
-        bPlusTree.insert(18, 14);
-        bPlusTree.insert(19, 15);
-        bPlusTree.insert(20, 16);
-        bPlusTree.insert(21, 17);
-        bPlusTree.insert(22, 18);
-        bPlusTree.insert(23, 19);
+        for (int i = 18; i <= 23; i++) {
+            bPlusTree.insert(i, i+100);
+        }
         bPlusTree.print();
 
-        System.out.println("Get key " + 4 + ": " + bPlusTree.get(4));
-        System.out.println("Get key " + 9 + ": " + bPlusTree.get(9));
-        System.out.println("Get key " + 23 + ": " + bPlusTree.get(23));
+        /**
+         *                      [11                       17                         23]
+         *       [7     9]	            [13      15]	           [19      21]	              [25       27      29]
+         * [5,6]->[7,8]->[9,10]->[11,12]->[13,14]->[15,16]->[17,18]->[19,20]->[21,22]->[23,24]->[25,26]->[27,28]->[29,30,31]->
+         */
+        for (int i = 24; i <= 31; i++) {
+            bPlusTree.insert(i, i+100);
+        }
+        bPlusTree.print();
 
-        System.out.print("Range key [" + 5 + ", " + 6 + "]: ");
-        bPlusTree.range(5, 6).forEach(l -> {
-            System.out.print(l + " ");
-        });
+        printGet(bPlusTree,4);
+        printGet(bPlusTree,9);
+        printGet(bPlusTree,23);
+
+        printRange(bPlusTree,5, 6);
+        printRange(bPlusTree,17, 21);
+        printRange(bPlusTree,29, 40);
+        printRange(bPlusTree,32, 40);
+
+        for (int i = 32; i <= 100; i++) {
+            bPlusTree.insert(i, i+100);
+        }
+        bPlusTree.print();
+    }
+
+    private static void printGet(BPlusTree bPlusTree, int key){
+        System.out.println("Get key " + key + ": " + bPlusTree.get(key));
+    }
+
+    private static void printRange(BPlusTree bPlusTree, int from, int to){
+        System.out.print("Range key [" + from + ", " + to + "]: ");
+        bPlusTree.range(from, to).forEach(l -> System.out.print(l + " "));
         System.out.println();
-
-        System.out.print("Range key [" + 10 + ", " + 13 + "]: ");
-        bPlusTree.range(10, 13).forEach(l -> {
-            System.out.print(l + " ");
-        });
-        System.out.println();
-
     }
 
 }
