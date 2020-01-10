@@ -1,12 +1,10 @@
 package code.algorithm.search;
 
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.Arrays;
 
 /**
  * 〈二分查找〉<p>
- * 〈功能详细描述〉
+ * 最坏时间复杂度：O(log n)
  *
  * @author zixiao
  * @date 2019/11/27
