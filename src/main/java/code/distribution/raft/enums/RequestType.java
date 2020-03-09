@@ -13,5 +13,5 @@ public interface RequestType {
 
     int REQUEST_VOTE = 2;
 
-    int CLEINT_REQ = 3;
+    int CLIENT_REQ = 3;
 }

@@ -14,9 +14,9 @@ public class SingleLinkedList<E> implements IList<E> {
 
     private Node<E> head;
 
-    private static class Node<E> {
-        E item;
-        Node<E> next;
+    public static class Node<E> {
+        public E item;
+        public Node<E> next;
 
         Node(E element, Node<E> next) {
             this.item = element;
@@ -60,7 +60,7 @@ public class SingleLinkedList<E> implements IList<E> {
         return node == null ? null : node.item;
     }
 
-    private Node<E> getNode(int index) {
+    public Node<E> getNode(int index) {
         Node<E> node = head;
         for (int i = 1; i <= index; i++) {
             if (node == null) {
@@ -162,7 +162,7 @@ public class SingleLinkedList<E> implements IList<E> {
      *  <- A <- B <- C <- D <-
      *               p   q(head)
      */
-    public void reverse(){
+    public void reverse1(){
         if(head == null || head.next == null){
             return;
         }
@@ -181,6 +181,31 @@ public class SingleLinkedList<E> implements IList<E> {
         p = q = null;
     }
 
+    /**
+     * 迭代法
+     */
+    public void reverse(){
+        if(head == null || head.next == null){
+            return;
+        }
+        Node<E> prev = null;
+        Node<E> curr = head;
+        while (curr != null){
+            Node<E> temp  = curr.next;
+            curr.next = prev;
+            prev = curr;
+            curr = temp;
+        }
+        head = prev;
+    }
+
+    /**
+     * 环检测
+     * 快慢两个指针，p每次1步 q每次2步
+     * 1、快指针q，走到末尾时，退出循环
+     * 2、当两个指针相遇时，如果p和q都不为null，则存在环
+     * @return
+     */
     public boolean isCycle(){
         if (head == null) {
             return false;
@@ -189,16 +214,17 @@ public class SingleLinkedList<E> implements IList<E> {
         Node<E> q = head;
         while (true) {
             p = p.next;
-            if (q.next != null || q.next.next != null) {
+            if (q.next == null || q.next.next == null) {
+                q = null;
                 break;
             } else {
                 q = q.next.next;
             }
-            if(p == q && p != null){
+            if (p == q && p != null) {
                 return true;
             }
         }
-        return p == q && p != null;
+        return false;
     }
 
     @Override

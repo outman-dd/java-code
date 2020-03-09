@@ -1,4 +1,4 @@
-package code.algorithm.recall;
+package code.algorithm.backtracking;
 
 /**
  * 〈8皇后问题〉<p>

@@ -138,4 +138,19 @@ public class SingleLinkedListTest{
         System.out.println(linkedList);
     }
 
+    @Test
+    public void testCycle(){
+        SingleLinkedList<String> linkedList = new SingleLinkedList<String>();
+        linkedList.add("a");
+        linkedList.add("b");
+        linkedList.add("c");
+        linkedList.add("d");
+        linkedList.add("e");
+
+        Assert.isTrue(linkedList.isCycle() != true, "");
+
+        //a->b->c->d->e->c...
+        linkedList.getNode(4).next = linkedList.getNode(2);
+        Assert.isTrue(linkedList.isCycle() , "");
+    }
 }

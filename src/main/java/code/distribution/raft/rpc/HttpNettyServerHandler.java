@@ -54,7 +54,7 @@ public class HttpNettyServerHandler extends ChannelInboundHandlerAdapter {
                 RequestVoteReq requestVoteReq = (RequestVoteReq) raftRequest.getRequest();
                 RequestVoteRet requestVoteRet = nodeServer.handleRequestVote(requestVoteReq);
                 sendResult(ctx, requestVoteRet);
-            } else if (raftRequest.getRequestType() == RequestType.CLEINT_REQ) {
+            } else if (raftRequest.getRequestType() == RequestType.CLIENT_REQ) {
                 ClientReq clientReq = (ClientReq) raftRequest.getRequest();
                 ClientRet clientRet = nodeServer.handleClientRequest(clientReq);
                 sendResult(ctx, clientRet);

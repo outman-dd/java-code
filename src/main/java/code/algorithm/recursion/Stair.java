@@ -22,9 +22,25 @@ public class Stair {
         return f(n - 1) + f(n - 2);
     }
 
+    public static int f2(int n) {
+        int sum = 1;
+        int n_2 = 0;
+        int n_1 = 1;
+        //f(n) = f(n-2)+f(n-1), f(0) = 1
+        for(int i=0; i<n; i++){
+            sum = (n_2 + n_1)%1000000007;
+            n_2 = n_1;
+            n_1 = sum;
+        }
+        return sum;
+    }
+
     public static void main(String[] args) {
-        for (int i = 1; i <= 6; i++) {
+        for (int i = 1; i <= 11; i++) {
             System.out.println(i + " stairs :" + f(i));
+        }
+        for (int i = 1; i <= 11; i++) {
+            System.out.println(i + " stairs :" + f2(i));
         }
     }
 }
