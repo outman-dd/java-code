@@ -213,18 +213,15 @@ public class SingleLinkedList<E> implements IList<E> {
         Node<E> p = head;
         Node<E> q = head;
         while (true) {
-            p = p.next;
             if (q.next == null || q.next.next == null) {
-                q = null;
-                break;
-            } else {
-                q = q.next.next;
+                return false;
             }
-            if (p == q && p != null) {
+            p = p.next;
+            q = q.next.next;
+            if (p == q) {
                 return true;
             }
         }
-        return false;
     }
 
     @Override
