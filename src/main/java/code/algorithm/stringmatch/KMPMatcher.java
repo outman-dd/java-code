@@ -2,7 +2,9 @@ package code.algorithm.stringmatch;
 
 /**
  * 〈KMP算法〉<p>
- * 〈功能详细描述〉
+ *  Knuth-Morris-Pratt 字符串查找算法，简称为 KMP算法，
+ *  常用于在一个文本串 S 内查找一个模式串 P 的出现位置。
+ * 时间复杂度：O(m+n)
  *
  * @author zixiao
  * @date 2020/1/17
@@ -31,7 +33,6 @@ public class KMPMatcher implements IMatcher {
 
         //2 移动比较
         while (curS < sArray.length && curP < pArray.length) {
-            //System.out.print("curP: " + curP + "， curS：" + curS);
             if (sArray[curS] == pArray[curP]) {
                 curP++;
                 curS++;
@@ -40,7 +41,6 @@ public class KMPMatcher implements IMatcher {
                     break;
                 }
                 //移动到nextArray[curP]位置
-                //System.out.print(" next: " + nextArray[curP]);
                 curP = nextArray[curP];
                 //curP指针为-1时
                 if (curP == -1) {
@@ -51,7 +51,6 @@ public class KMPMatcher implements IMatcher {
                 }
                 move++;
             }
-            //System.out.println();
             compare++;
         }
         boolean match = curP == pArray.length;
@@ -61,7 +60,7 @@ public class KMPMatcher implements IMatcher {
 
     private int[] getNextArray(char[] pArray) {
         int pLen = pArray.length;
-        //1 前缀后缀的公共元素的最大长度
+        //1 P串所有子字符串的前缀后缀公共元素的最大长度
         int[] maxArray = new int[pLen];
         for (int i = 0; i < pLen; i++) {
             maxArray[i] = getMaxOfPrefixPostfix(pArray, i);

@@ -103,13 +103,13 @@ public class TrieChinese {
      * 2、三个指针，p1指向root，p3指向第一个开始匹配敏感字，p2指向当前参与匹配的字
      * @param text
      * @return
+     * @see https://www.cnblogs.com/kubidemanong/p/10834993.html
      */
     public String filterSensitiveWord(String text){
         char[] textArray = text.toCharArray();
         TrieNode p1 = root;
         int p2 = 0;
         int p3 = 0;
-        boolean matching = false;
 
         while (p2 < textArray.length){
             TrieNode next = p1.children.get(textArray[p2]);
@@ -121,29 +121,17 @@ public class TrieChinese {
 
                     //从下一个位置重新开始
                     p2++;
-                    p3++;
+                    p3 = p2;
                     p1 = root;
-                    matching = false;
                 } else {
-                    //匹配中
+                    //继续匹配下个字符
                     p1 = next;
                     p2++;
-                    matching = true;
                 }
-            } else if (matching) {
-                //匹配中，则p2退回上一个词，p3前进到p2位置
-                if(p2 - p3 > 1){ //如果相差1，则会死循环
-                    p2--;
-                }
-                p3 = p2;
-                p1 = root;
-                matching = false;
             } else {
-                //不是匹配中，则从下一个位置重新开始
-                p2++;
                 p3++;
+                p2 = p3;
                 p1 = root;
-                matching = false;
             }
         }
         return new String(textArray);
@@ -198,7 +186,15 @@ public class TrieChinese {
         trie.insert("妈了个逼");
 
         System.out.println(trie.filterSensitiveWord("我去你妈了个逼"));
-        System.out.println(trie.filterSensitiveWord("我艹他们，狗日的见鬼了"));
+        System.out.println(trie.filterSensitiveWord("我艹他码，狗日的见鬼了"));
         System.out.println(trie.filterSensitiveWord("我们操场见"));
+
+        //文本 abcdefghi ,以及三个敏感词"de", "bca", "bcf"
+        trie = new TrieChinese();
+        trie.insert("de");
+        trie.insert("bca");
+        trie.insert("bcf");
+        System.out.println(trie.filterSensitiveWord("abcdefghi"));
+
     }
 }
